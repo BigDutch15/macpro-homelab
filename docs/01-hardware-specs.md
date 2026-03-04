@@ -119,16 +119,14 @@ This document details the hardware specifications of the Mac Pro (Early 2008) us
 
 ### Completed Upgrades
 
-1. **Memory**: Upgraded from 2GB to 16GB FB-DIMM
-2. **Primary Storage**: Replaced original HDD with 500GB SSD
-3. **Secondary Storage**: Added 2TB HDD for data storage
+1. **Memory**: Upgraded from 8GB to 32GB FB-DIMM
+2. **Primary Storage**: Replaced original HDD with TB SSD
+3. **Secondary Storage**: Added 1TB SSD for data storage
 
-### Planned Upgrades
+### Future Possible Upgrades
 
-1. **Additional Storage**: More 2TB+ drives for ZFS pool
-2. **GPU**: Consider upgrade for GPU passthrough capabilities
-3. **Network**: 10GbE network card if needed
-4. **USB**: PCIe USB 3.0 card for faster external storage
+1. **Additional Storage**: Larger drives for ZFS pool
+2. **Network**: 10GbE network card if needed
 
 ## Compatibility Considerations
 
