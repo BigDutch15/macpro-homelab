@@ -207,6 +207,25 @@ Remove os-prober to prevent it from scanning VM partitions for boot entries:
 sudo apt remove -y os-prober
 ```
 
+### 7. Run Post-Installation Script
+
+The community Proxmox VE Helper Scripts provide a post-installation script that optimizes your Proxmox installation:
+
+```bash
+# Run the post-installation script
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/tools/pve/post-pve-install.sh)"
+```
+
+**The script will prompt you to configure:**
+
+- **Disable subscription nag**: Removes the enterprise repository nag screen
+- **High availability**: Enable/disable HA services based on your needs
+- **Corosync**: Configure cluster communication services
+- **System updates**: Update Proxmox VE to latest packages
+- **Reboot**: Recommended after completing post-installation
+
+**Note**: If you have multiple Proxmox nodes in a cluster, run this script on each node individually.
+
 ## Post-Installation Configuration
 
 ### 1. Verify Installation
