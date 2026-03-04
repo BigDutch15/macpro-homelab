@@ -30,7 +30,7 @@ usermod -aG sudo username
 #### 3. Install Essential Tools
 
 ```bash
-sudo apt install -y lshw htop net-tools curl git
+sudo apt install -y lshw htop net-tools curl git fastfetch gnupg apt-transport-https
 ```
 
 - `lshw` for hardware information
@@ -38,8 +38,11 @@ sudo apt install -y lshw htop net-tools curl git
 - `net-tools` for network utilities
 - `curl` for web requests and API calls
 - `git` for version control and repository management
+- `fastfetch` for fetching system information and displaying it in a visually appealing way
+- `gnupg` for GPG key management
+- `apt-transport-https` for HTTPS transport support
 
-#### 3. System Optimization
+#### 4. System Optimization
 
 Edit `/etc/sysctl.conf` for performance tuning
 
@@ -99,12 +102,14 @@ lshw -short
 
 With Debian post-installation configuration complete, the next steps are:
 
-1. **Network Configuration** - Set up static IP and network interfaces
 1. **SSH and Shell Setup** - Configure remote access and shell environment
-1. **Proxmox Installation** - Install and configure virtualization platform
+2. **Proxmox Installation** - Install and configure virtualization platform
+3. **Video Drivers** - Install NVIDIA drivers for GTX 750 Ti
+4. **Network Configuration** - Set up static IP and network interfaces
 
 See the respective documentation files for detailed instructions:
 
-- [Network Configuration](04-network-configuration.md)
-- [SSH and Shell Setup](05-ssh-shell-setup.md)
-- [Proxmox Installation](06-proxmox-installation.md)
+- [SSH and Shell Setup](04-ssh-shell-setup.md)
+- [Proxmox Installation](05-proxmox-installation.md)
+- [Video Drivers](06-video-drivers.md)
+- [Network Configuration](07-network-configuration.md)

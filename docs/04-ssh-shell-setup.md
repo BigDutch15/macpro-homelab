@@ -216,7 +216,6 @@ p10k configure
 # Add to ~/.ssh/config
 Host *
     Compression yes
-    CompressionLevel 6
     ServerAliveInterval 60
     ControlMaster auto
     ControlPath ~/.ssh/master-%r@%h:%p
