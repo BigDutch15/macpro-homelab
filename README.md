@@ -6,14 +6,15 @@ This repository documents the complete setup of a home lab using a Mac Pro (Earl
 
 1. [Hardware Specifications](docs/01-hardware-specs.md)
 2. [Debian 13 Installation](docs/02-debian-installation.md)
-3. [SSH and Shell Setup](docs/03-ssh-shell-setup.md)
-4. [Proxmox Installation](docs/04-proxmox-installation.md)
-5. [Network Configuration](docs/05-network-configuration.md)
-6. [Video Drivers and Tools](docs/06-video-drivers.md)
-7. [TrueNAS Setup](docs/07-truenas-setup.md)
-8. [Docker Installation](docs/08-docker-setup.md)
-9. [Automatic Ripping Machine](docs/09-automatic-ripping-machine.md)
-10. [n8n Installation](docs/10-n8n-setup.md)
+3. [Debian Post-Installation](docs/03-debian-post-installation.md)
+4. [Network Configuration](docs/04-network-configuration.md)
+5. [SSH and Shell Setup](docs/05-ssh-shell-setup.md)
+6. [Proxmox Installation](docs/06-proxmox-installation.md)
+7. [Video Drivers and Tools](docs/07-video-drivers.md)
+8. [TrueNAS Setup](docs/08-truenas-setup.md)
+9. [Docker Installation](docs/09-docker-setup.md)
+10. [Automatic Ripping Machine](docs/10-automatic-ripping-machine.md)
+11. [n8n Installation](docs/11-n8n-setup.md)
 
 ## Project Structure
 
@@ -23,14 +24,15 @@ macpro-homelab/
 ├── docs/                     # All documentation
 │   ├── 01-hardware-specs.md
 │   ├── 02-debian-installation.md
-│   ├── 03-ssh-shell-setup.md
-│   ├── 04-proxmox-installation.md
-│   ├── 05-network-configuration.md
-│   ├── 06-video-drivers.md
-│   ├── 07-truenas-setup.md
-│   ├── 08-docker-setup.md
-│   ├── 09-automatic-ripping-machine.md
-│   └── 10-n8n-setup.md
+│   ├── 03-debian-post-installation.md
+│   ├── 04-network-configuration.md
+│   ├── 05-ssh-shell-setup.md
+│   ├── 06-proxmox-installation.md
+│   ├── 07-video-drivers.md
+│   ├── 08-truenas-setup.md
+│   ├── 09-docker-setup.md
+│   ├── 10-automatic-ripping-machine.md
+│   └── 11-n8n-setup.md
 ├── assets/                   # Screenshots and images
 ├── scripts/                  # Useful scripts
 └── config-files/             # Configuration file examples
