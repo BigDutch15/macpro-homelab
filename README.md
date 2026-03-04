@@ -6,6 +6,7 @@ This repository documents the complete setup of a home lab using a Mac Pro (Earl
 
 1. [Hardware Specifications](docs/01-hardware-specs.md)
 2. [Debian 13 Installation](docs/02-debian-installation.md)
+3. [Debian Post-Installation](docs/03-debian-post-installation.md)
 
 ## Project Structure
 
@@ -15,6 +16,7 @@ macpro-homelab/
 ├── docs/                     # All documentation
 │   ├── 01-hardware-specs.md
 │   ├── 02-debian-installation.md
+│   ├── 03-debian-post-installation.md
 ├── assets/                   # Screenshots and images
 ├── scripts/                  # Useful scripts
 └── config-files/             # Configuration file examples
