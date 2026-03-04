@@ -9,6 +9,7 @@ This repository documents the complete setup of a home lab using a Mac Pro (Earl
 3. [Debian Post-Installation](docs/03-debian-post-installation.md)
 4. [SSH and Shell Setup](docs/04-ssh-shell-setup.md)
 5. [Proxmox Installation](docs/05-proxmox-installation.md)
+6. [Video Drivers](docs/06-video-drivers.md)
 
 ## Project Structure
 
@@ -21,6 +22,7 @@ macpro-homelab/
 │   ├── 03-debian-post-installation.md
 │   ├── 04-ssh-shell-setup.md
 │   ├── 05-proxmox-installation.md
+│   ├── 06-video-drivers.md
 ├── assets/                   # Screenshots and images
 ├── scripts/                  # Useful scripts
 └── config-files/             # Configuration file examples

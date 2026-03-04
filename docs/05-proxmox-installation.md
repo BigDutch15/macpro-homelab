@@ -218,13 +218,14 @@ sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/P
 
 **The script will prompt you to configure:**
 
-- **Disable subscription nag**: Removes the enterprise repository nag screen
-- **High availability**: Enable/disable HA services based on your needs
-- **Corosync**: Configure cluster communication services
-- **System updates**: Update Proxmox VE to latest packages
-- **Reboot**: Recommended after completing post-installation
-
-**Note**: If you have multiple Proxmox nodes in a cluster, run this script on each node individually.
+- pve-enterprise -> disable Comment out (disable) this repo
+- pve-no-subscription -> Keep as is
+- Add (Disabled) 'pvetest' repository (deb822)? -> yes
+- Disable subscription nag? -> yes
+- Disable high availability? -> yes
+- Disable Corosync for a Proxmox VE Cluster? -> yes
+- Update Proxmox VE now? -> no
+- Reboot Proxmox VE now? (recommended) -> no
 
 ## Post-Installation Configuration
 
@@ -328,3 +329,4 @@ With Proxmox VE installed and configured, you now have a powerful virtualization
 - [Proxmox Forums](https://forum.proxmox.com/)
 - [Proxmox Wiki](https://pve.proxmox.com/wiki/Main_Page)
 - [Official Installation Guide for Debian 13 Trixie](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_13_Trixie)
+- [Community Proxmox VE Helper Scripts](https://github.com/community-scripts/ProxmoxVE)
