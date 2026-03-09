@@ -30,7 +30,7 @@ usermod -aG sudo username
 #### 3. Install Essential Tools
 
 ```bash
-sudo apt install -y lshw htop net-tools curl git fastfetch gnupg apt-transport-https
+sudo apt install -y lshw htop net-tools curl git fastfetch gnupg apt-transport-https parted
 ```
 
 - `lshw` for hardware information
@@ -41,6 +41,7 @@ sudo apt install -y lshw htop net-tools curl git fastfetch gnupg apt-transport-h
 - `fastfetch` for fetching system information and displaying it in a visually appealing way
 - `gnupg` for GPG key management
 - `apt-transport-https` for HTTPS transport support
+- `parted` for partition management
 
 #### 4. System Optimization
 
