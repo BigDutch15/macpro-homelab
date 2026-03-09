@@ -289,6 +289,85 @@ sudo update-grub
 sudo systemctl reboot
 ```
 
+## Storage Configuration
+
+### Configure LVM-Thin Storage for VMs
+
+By default, Proxmox may only have directory-based storage. For better performance and features (snapshots, thin provisioning), configure LVM-thin storage on a dedicated SSD.
+
+#### 1. Identify Available Disks
+
+```bash
+# List all block devices
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT,MODEL
+
+# Check for unpartitioned disks
+fdisk -l
+
+# List disks by ID (for reference)
+ls -l /dev/disk/by-id/ | grep -v part
+```
+
+#### 2. Create LVM-Thin Storage
+
+**Example using /dev/sde (1TB SSD):**
+
+```bash
+# Become root
+sudo su -
+
+# Create physical volume on the SSD
+pvcreate /dev/sde
+
+# Create volume group named 'pve'
+vgcreate pve /dev/sde
+
+# Create thin pool (use ~90% of disk, leaving space for metadata)
+# For a 1TB disk, use 900G
+lvcreate -L 900G -T pve/data
+
+# Add to Proxmox storage configuration
+pvesm add lvmthin local-lvm --vgname pve --thinpool data
+
+# Exit root
+exit
+```
+
+#### 3. Verify Storage Configuration
+
+```bash
+# Check physical volumes
+sudo pvs
+
+# Check volume groups
+sudo vgs
+
+# Check logical volumes
+sudo lvs
+
+# Enable disk image and container content types
+pvesm set local-lvm --content images,rootdir
+
+# Verify Proxmox storage
+pvesm status
+```
+
+You should now see `local-lvm` storage available with LVM-thin type.
+
+#### 4. Set as Default Storage (Optional)
+
+In the Proxmox web interface:
+
+1. Navigate to **Datacenter** → **Storage**
+2. Select `local-lvm`
+3. Check **Disk image** and **Container** content types
+4. Set as default if desired
+
+**Storage Recommendations:**
+
+- **local-lvm** (LVM-thin on SSD) - VM/Container disks (fast, snapshots)
+- **local** (Directory) - ISO images, backups, templates
+
 ## Performance Optimization
 
 ### 1. CPU Performance
