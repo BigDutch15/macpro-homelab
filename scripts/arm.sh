@@ -9,6 +9,61 @@ if ! command -v whiptail &> /dev/null; then
     apt-get update && apt-get install -y whiptail
 fi
 
+# Function to wait for container to be running
+wait_for_container() {
+    local container_id=$1
+    local timeout=${2:-60}
+    local elapsed=0
+    
+    echo "Waiting for container $container_id to come online..."
+    while ! pct status $container_id | grep -q "running"; do
+        sleep 2
+        elapsed=$((elapsed + 2))
+        if [ $elapsed -ge $timeout ]; then
+            echo "ERROR: Container $container_id did not come online within ${timeout}s"
+            return 1
+        fi
+        echo "  Waiting... (${elapsed}s)"
+    done
+    echo "Container $container_id is running"
+    return 0
+}
+
+# Function to validate NFS mount read/write access
+validate_nfs_mount() {
+    local container_id=$1
+    local mount_path=$2
+    local test_user=${3:-arm}
+    
+    echo "  Validating $mount_path..."
+    
+    # Check if mount point exists
+    if ! pct exec $container_id -- bash -c "[ -d '$mount_path' ]" 2>/dev/null; then
+        echo "    ERROR: Mount point $mount_path does not exist"
+        return 1
+    fi
+    
+    # Check if mount is actually mounted
+    if ! pct exec $container_id -- bash -c "mountpoint -q '$mount_path'" 2>/dev/null; then
+        echo "    WARNING: $mount_path is not a mounted filesystem"
+    fi
+    
+    # Test write access
+    if ! pct exec $container_id -- bash -c "sudo -u $test_user touch '$mount_path/test.txt'" 2>/dev/null; then
+        echo "    ERROR: Cannot write to $mount_path as $test_user"
+        return 1
+    fi
+    
+    # Test delete access
+    if ! pct exec $container_id -- bash -c "sudo -u $test_user rm '$mount_path/test.txt'" 2>/dev/null; then
+        echo "    ERROR: Cannot delete from $mount_path as $test_user"
+        return 1
+    fi
+    
+    echo "    OK"
+    return 0
+}
+
 TITLE="ARM Docker Container Setup"
 
 # Prompt for container-specific settings
@@ -95,3 +150,50 @@ eval $CMD
 
 # Cleanup
 rm -f /tmp/docker-setup.sh
+
+# Install nfs-common and sudo
+echo "Installing nfs-common and sudo..."
+pct exec $CONTAINER_ID -- bash -c "apt-get update && apt-get install -y nfs-common sudo"
+
+# Create arm user
+echo "Creating arm user..."
+pct exec $CONTAINER_ID -- bash -c "useradd -u 1000 -m -s /bin/bash arm && usermod -aG sudo arm && passwd arm"
+
+
+# Create mount points for nfs shares on the ARM container
+echo "Creating mount points for NFS shares..."
+pct exec $CONTAINER_ID -- bash -c "mkdir -p /mnt/media/{music,movies,shows}"
+
+# Add shares to fstab
+echo "Adding shares to fstab..."
+# prompt for the nfs server ip
+read -p "Enter the NFS server IP: " NFS_SERVER
+pct exec $CONTAINER_ID -- bash -c "echo '$NFS_SERVER:/mnt/tank/media/music /mnt/media/music nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0' >> /etc/fstab"
+pct exec $CONTAINER_ID -- bash -c "echo '$NFS_SERVER:/mnt/tank/media/movies /mnt/media/movies nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0' >> /etc/fstab"
+pct exec $CONTAINER_ID -- bash -c "echo '$NFS_SERVER:/mnt/tank/media/shows /mnt/media/shows nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0' >> /etc/fstab"
+
+# Restart the container
+echo "Restarting the container..."
+pct reboot $CONTAINER_ID
+
+# Wait for container to come back online
+wait_for_container $CONTAINER_ID || exit 1
+
+# Validate NFS mounts as arm user
+echo "Validating NFS mounts..."
+NFS_VALIDATION_FAILED=0
+
+validate_nfs_mount $CONTAINER_ID "/mnt/media/music" || NFS_VALIDATION_FAILED=1
+validate_nfs_mount $CONTAINER_ID "/mnt/media/movies" || NFS_VALIDATION_FAILED=1
+validate_nfs_mount $CONTAINER_ID "/mnt/media/shows" || NFS_VALIDATION_FAILED=1
+
+if [ $NFS_VALIDATION_FAILED -eq 1 ]; then
+    echo ""
+    echo "WARNING: Some NFS mounts failed validation."
+    echo "Please check NFS server permissions and mount configuration."
+else
+    echo "All NFS mounts validated successfully"
+fi
+
+echo ""
+echo "ARM container setup complete!"
