@@ -247,6 +247,7 @@ pct exec $CONTAINER_ID -- bash -c "/tmp/docker-setup.sh"
 # Create ARM directories
 echo "Creating ARM directories..."
 pct exec $CONTAINER_ID -- bash -c "mkdir -p /home/arm/{music,logs,media,config}"
+pct exec $CONTAINER_ID -- bash -c "mkdir -p /home/arm/media/completed/{movies,shows}"
 pct exec $CONTAINER_ID -- bash -c "chown -R arm:arm /home/arm"
 
 # Get the NFS music mount path for ARM config
