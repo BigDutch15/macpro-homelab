@@ -159,18 +159,47 @@ pct exec $CONTAINER_ID -- bash -c "apt-get update && apt-get install -y nfs-comm
 echo "Creating arm user..."
 pct exec $CONTAINER_ID -- bash -c "useradd -u 1000 -m -s /bin/bash arm && usermod -aG sudo arm && passwd arm"
 
-
-# Create mount points for nfs shares on the ARM container
-echo "Creating mount points for NFS shares..."
-pct exec $CONTAINER_ID -- bash -c "mkdir -p /mnt/media/{music,movies,shows}"
-
-# Add shares to fstab
-echo "Adding shares to fstab..."
-# prompt for the nfs server ip
+# Prompt for NFS server IP
+echo "Configuring NFS mounts..."
 read -p "Enter the NFS server IP: " NFS_SERVER
-pct exec $CONTAINER_ID -- bash -c "echo '$NFS_SERVER:/mnt/tank/media/music /mnt/media/music nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0' >> /etc/fstab"
-pct exec $CONTAINER_ID -- bash -c "echo '$NFS_SERVER:/mnt/tank/media/movies /mnt/media/movies nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0' >> /etc/fstab"
-pct exec $CONTAINER_ID -- bash -c "echo '$NFS_SERVER:/mnt/tank/media/shows /mnt/media/shows nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0' >> /etc/fstab"
+
+# Discover available NFS shares
+echo "Discovering NFS shares from $NFS_SERVER..."
+NFS_SHARES=$(pct exec $CONTAINER_ID -- bash -c "showmount -e $NFS_SERVER --no-headers 2>/dev/null" | awk '{print $1}')
+
+if [ -z "$NFS_SHARES" ]; then
+    echo "ERROR: No NFS shares found on $NFS_SERVER or showmount failed"
+    echo "Please verify the NFS server is running and accessible"
+    exit 1
+fi
+
+echo "Found NFS shares:"
+echo "$NFS_SHARES" | while read share; do
+    echo "  $share"
+done
+
+# Create mount points and add to fstab for each share
+echo ""
+echo "Creating mount points and configuring fstab..."
+MOUNT_BASE="/mnt/nfs"
+
+echo "$NFS_SHARES" | while read share; do
+    if [ -n "$share" ]; then
+        # Create local mount point based on share path
+        local_mount="$MOUNT_BASE$share"
+        
+        echo "  Configuring: $share -> $local_mount"
+        
+        # Create mount directory
+        pct exec $CONTAINER_ID -- bash -c "mkdir -p '$local_mount'"
+        
+        # Add to fstab
+        fstab_entry="$NFS_SERVER:$share $local_mount nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0"
+        pct exec $CONTAINER_ID -- bash -c "echo '$fstab_entry' >> /etc/fstab"
+    fi
+done
+
+echo "NFS mounts configured"
 
 # Restart the container
 echo "Restarting the container..."
@@ -183,9 +212,12 @@ wait_for_container $CONTAINER_ID || exit 1
 echo "Validating NFS mounts..."
 NFS_VALIDATION_FAILED=0
 
-validate_nfs_mount $CONTAINER_ID "/mnt/media/music" || NFS_VALIDATION_FAILED=1
-validate_nfs_mount $CONTAINER_ID "/mnt/media/movies" || NFS_VALIDATION_FAILED=1
-validate_nfs_mount $CONTAINER_ID "/mnt/media/shows" || NFS_VALIDATION_FAILED=1
+# Get list of configured mount points from fstab
+CONFIGURED_MOUNTS=$(pct exec $CONTAINER_ID -- bash -c "grep 'nfs' /etc/fstab | awk '{print \$2}'" 2>/dev/null)
+
+for mount_point in $CONFIGURED_MOUNTS; do
+    validate_nfs_mount $CONTAINER_ID "$mount_point" || NFS_VALIDATION_FAILED=1
+done
 
 if [ $NFS_VALIDATION_FAILED -eq 1 ]; then
     echo ""
