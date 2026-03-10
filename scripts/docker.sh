@@ -259,6 +259,13 @@ fi
 echo "Starting container creation..."
 echo ""
 
+# Check if container already exists
+if pct status $VAR_PVE_ID &>/dev/null; then
+    echo "ERROR: Container $VAR_PVE_ID already exists!"
+    echo "Please destroy it first with: pct destroy $VAR_PVE_ID"
+    exit 1
+fi
+
 pveam update
 
 # List available templates and storage locations
@@ -270,10 +277,19 @@ pveam available --section system | grep -i "${VAR_OS}-${VAR_OS_VERSION}"
 # Set the image name variable dynamically
 OS_IMAGE=$(pveam available --section system | grep -i "${VAR_OS}-${VAR_OS_VERSION}" | awk '{print $2}')
 
+if [ -z "$OS_IMAGE" ]; then
+    echo "ERROR: Could not find OS template for ${VAR_OS}-${VAR_OS_VERSION}"
+    exit 1
+fi
+
+echo "Using OS template: $OS_IMAGE"
+
 # Download the OS template
 pveam download local $OS_IMAGE
 
-pct create $VAR_PVE_ID local:vztmpl/$OS_IMAGE \
+# Create the container
+echo "Creating container $VAR_PVE_ID..."
+if ! pct create $VAR_PVE_ID local:vztmpl/$OS_IMAGE \
  --arch $VAR_ARCH \
  --cores $VAR_CPU \
  --memory $VAR_RAM \
@@ -286,7 +302,12 @@ pct create $VAR_PVE_ID local:vztmpl/$OS_IMAGE \
  --ostype $VAR_OSTYPE \
  --features nesting=1 \
  --unprivileged $VAR_UNPRIVILEGED \
- --start 0
+ --start 0; then
+    echo "ERROR: Failed to create container $VAR_PVE_ID"
+    exit 1
+fi
+
+echo "Container $VAR_PVE_ID created successfully"
 
 configure_security_settings() {
     local container_id=$1
