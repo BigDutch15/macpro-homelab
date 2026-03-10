@@ -227,5 +227,75 @@ else
     echo "All NFS mounts validated successfully"
 fi
 
+# Install ARM (Automatic Ripping Machine) Docker
+echo ""
+echo "Installing ARM Docker..."
+
+# Install prerequisites
+echo "Installing ARM prerequisites..."
+pct exec $CONTAINER_ID -- bash -c "apt-get install -y wget lsscsi"
+
+# Download ARM docker-setup script
+echo "Downloading ARM docker-setup script..."
+pct exec $CONTAINER_ID -- bash -c "wget -q https://raw.githubusercontent.com/automatic-ripping-machine/automatic-ripping-machine/main/scripts/installers/docker-setup.sh -O /tmp/docker-setup.sh"
+pct exec $CONTAINER_ID -- bash -c "chmod +x /tmp/docker-setup.sh"
+
+# Run ARM docker-setup script
+echo "Running ARM docker-setup script..."
+pct exec $CONTAINER_ID -- bash -c "/tmp/docker-setup.sh"
+
+# Create ARM directories
+echo "Creating ARM directories..."
+pct exec $CONTAINER_ID -- bash -c "mkdir -p /home/arm/{music,logs,media,config}"
+pct exec $CONTAINER_ID -- bash -c "chown -R arm:arm /home/arm"
+
+# Get the NFS music mount path for ARM config
+MUSIC_MOUNT=$(pct exec $CONTAINER_ID -- bash -c "grep 'music' /etc/fstab | awk '{print \$2}'" 2>/dev/null | head -1)
+
+# Generate start_arm_container.sh with proper configuration
+echo "Generating ARM container start script..."
+pct exec $CONTAINER_ID -- bash -c "cat > /home/arm/start_arm_container.sh << 'ARMSCRIPT'
+#!/bin/bash
+docker run -d \\
+    --name automatic-ripping-machine \\
+    --restart unless-stopped \\
+    -p 8080:8080 \\
+    -e TZ=America/New_York \\
+    -v \"/home/arm:/home/arm\" \\
+    -v \"${MUSIC_MOUNT:-/home/arm/music}:/home/arm/music\" \\
+    -v \"/home/arm/logs:/home/arm/logs\" \\
+    -v \"/home/arm/media:/home/arm/media\" \\
+    -v \"/home/arm/config:/etc/arm/config\" \\
+    --device=/dev/sr0:/dev/sr0 \\
+    --privileged \\
+    automaticrippingmachine/automatic-ripping-machine:latest
+ARMSCRIPT"
+
+pct exec $CONTAINER_ID -- bash -c "chmod +x /home/arm/start_arm_container.sh"
+pct exec $CONTAINER_ID -- bash -c "chown arm:arm /home/arm/start_arm_container.sh"
+
+# Start ARM container
+echo "Starting ARM Docker container..."
+pct exec $CONTAINER_ID -- bash -c "sudo -u arm /home/arm/start_arm_container.sh"
+
+# Wait for ARM to start
+echo "Waiting for ARM container to start..."
+sleep 10
+
+# Verify ARM is running
+if pct exec $CONTAINER_ID -- bash -c "docker ps | grep -q automatic-ripping-machine"; then
+    echo "ARM Docker container is running"
+    echo ""
+    echo "ARM Web UI available at: http://<CONTAINER_IP>:8080"
+    echo "Default credentials: admin / password"
+else
+    echo "WARNING: ARM Docker container may not have started correctly"
+    echo "Check logs with: docker logs automatic-ripping-machine"
+fi
+
+# Cleanup
+pct exec $CONTAINER_ID -- bash -c "rm -f /tmp/docker-setup.sh"
+
 echo ""
 echo "ARM container setup complete!"
+
