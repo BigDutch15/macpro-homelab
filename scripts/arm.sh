@@ -297,6 +297,17 @@ CONTAINER_IP=$(pct exec $CONTAINER_ID -- bash -c "hostname -I | awk '{print \$1}
 # Verify ARM is running
 if pct exec $CONTAINER_ID -- bash -c "docker ps | grep -q automatic-ripping-machine"; then
     echo "ARM Docker container is running"
+    
+    # Configure abcde.conf for FLAC output
+    echo "Configuring abcde.conf for FLAC output..."
+    sleep 5  # Wait for ARM to create default config files
+    pct exec $CONTAINER_ID -- bash -c "sed -i 's/^OUTPUTTYPE=.*/OUTPUTTYPE=flac/' /home/arm/config/abcde.conf"
+    
+    # Restart ARM container to apply config changes
+    echo "Restarting ARM container to apply configuration..."
+    pct exec $CONTAINER_ID -- bash -c "docker restart automatic-ripping-machine"
+    sleep 5
+    
     echo ""
     echo "ARM Web UI available at: http://${CONTAINER_IP}:8080"
     echo "Default credentials: admin / password"
