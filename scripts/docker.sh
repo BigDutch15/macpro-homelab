@@ -287,6 +287,28 @@ echo "Using OS template: $OS_IMAGE"
 # Download the OS template
 pveam download local $OS_IMAGE
 
+# Build network configuration string
+NET_CONFIG="name=$VAR_NETWORK,bridge=$VAR_BRIDGE,firewall=$VAR_FIREWALL,type=$VAR_TYPE"
+
+# Add VLAN tag if specified and not 0
+if [ "$VAR_VLAN" != "0" ] && [ -n "$VAR_VLAN" ]; then
+    NET_CONFIG="$NET_CONFIG,tag=$VAR_VLAN"
+fi
+
+# Handle IP configuration (dhcp vs static)
+if [ "$VAR_IP" = "dhcp" ]; then
+    NET_CONFIG="$NET_CONFIG,ip=dhcp"
+else
+    # Static IP - user should provide in CIDR format (e.g., 192.168.1.100/24)
+    # If no subnet mask provided, assume /24
+    if [[ "$VAR_IP" != *"/"* ]]; then
+        VAR_IP="$VAR_IP/24"
+    fi
+    NET_CONFIG="$NET_CONFIG,ip=$VAR_IP"
+fi
+
+echo "Network configuration: $NET_CONFIG"
+
 # Create the container
 echo "Creating container $VAR_PVE_ID..."
 if ! pct create $VAR_PVE_ID local:vztmpl/$OS_IMAGE \
@@ -295,7 +317,7 @@ if ! pct create $VAR_PVE_ID local:vztmpl/$OS_IMAGE \
  --memory $VAR_RAM \
  --swap $VAR_SWAP \
  --hostname $VAR_HOSTNAME \
- --net0 name=$VAR_NETWORK,bridge=$VAR_BRIDGE,firewall=$VAR_FIREWALL,ip=$VAR_IP,tag=$VAR_VLAN,type=$VAR_TYPE \
+ --net0 "$NET_CONFIG" \
  --storage $VAR_STORAGE \
  --rootfs $VAR_STORAGE:$VAR_ROOTFS_SIZE \
  --password "$VAR_PASSWORD" \
