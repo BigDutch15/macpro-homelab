@@ -251,6 +251,8 @@ pct exec $CONTAINER_ID -- bash -c "chown -R arm:arm /home/arm"
 
 # Get the NFS music mount path for ARM config
 MUSIC_MOUNT=$(pct exec $CONTAINER_ID -- bash -c "grep 'music' /etc/fstab | awk '{print \$2}'" 2>/dev/null | head -1)
+MOVIES_MOUNT=$(pct exec $CONTAINER_ID -- bash -c "grep 'movies' /etc/fstab | awk '{print \$2}'" 2>/dev/null | head -1)
+SHOWS_MOUNT=$(pct exec $CONTAINER_ID -- bash -c "grep 'shows' /etc/fstab | awk '{print \$2}'" 2>/dev/null | head -1)
 
 # Generate start_arm_container.sh with proper configuration
 echo "Generating ARM container start script..."
@@ -260,12 +262,18 @@ docker run -d \\
     --name automatic-ripping-machine \\
     --restart unless-stopped \\
     -p 8080:8080 \\
-    -e TZ=America/New_York \\
+    -e ARM_UID="1000" \\
+    -e ARM_GID="1000" \\
+    -e TZ=America/Chicago \\
+    -e NVIDIA_DRIVER_CAPABILITIES=all \\
     -v \"/home/arm:/home/arm\" \\
     -v \"${MUSIC_MOUNT:-/home/arm/music}:/home/arm/music\" \\
     -v \"/home/arm/logs:/home/arm/logs\" \\
     -v \"/home/arm/media:/home/arm/media\" \\
     -v \"/home/arm/config:/etc/arm/config\" \\
+    -v \"${MOVIES_MOUNT:-/home/arm/media/completed/movies}:/home/arm/media/completed/movies\" \\
+    -v \"${SHOWS_MOUNT:-/home/arm/media/completed/shows}:/home/arm/media/completed/shows\" \\
+    --gpus all \\
     --device=/dev/sr0:/dev/sr0 \\
     --privileged \\
     automaticrippingmachine/automatic-ripping-machine:latest
