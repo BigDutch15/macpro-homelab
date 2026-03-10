@@ -21,6 +21,7 @@ OPTIONS:
     --bridge <bridge>           Network bridge (default: vmbr0)
     --vlan <tag>                VLAN tag (default: 5)
     --ip <address>              IP address or dhcp (default: dhcp)
+    --gateway <address>         Gateway address for static IP (e.g., 192.168.1.1)
     --privileged <0|1>          Privileged container: 0=yes, 1=no (default: 0)
     --gpu <0|1>                 GPU passthrough: 0=no, 1=yes (default: 1)
     --optical <0|1>             Optical passthrough: 0=no, 1=yes (default: 1)
@@ -58,6 +59,7 @@ VAR_TYPE="veth"
 VAR_BRIDGE="vmbr0"
 VAR_VLAN="5"
 VAR_IP="dhcp"
+VAR_GATEWAY=""
 VAR_FIREWALL=1
 VAR_UNPRIVILEGED=0
 VAR_GPU_PASSTHROUGH=1
@@ -117,6 +119,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --ip)
             VAR_IP="$2"
+            shift 2
+            ;;
+        --gateway)
+            VAR_GATEWAY="$2"
             shift 2
             ;;
         --privileged)
@@ -305,6 +311,11 @@ else
         VAR_IP="$VAR_IP/24"
     fi
     NET_CONFIG="$NET_CONFIG,ip=$VAR_IP"
+    
+    # Add gateway if provided
+    if [ -n "$VAR_GATEWAY" ]; then
+        NET_CONFIG="$NET_CONFIG,gw=$VAR_GATEWAY"
+    fi
 fi
 
 echo "Network configuration: $NET_CONFIG"
