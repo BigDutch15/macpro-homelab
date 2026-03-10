@@ -290,11 +290,14 @@ pct exec $CONTAINER_ID -- bash -c "sudo -u arm /home/arm/start_arm_container.sh"
 echo "Waiting for ARM container to start..."
 sleep 10
 
+# Get container IP address
+CONTAINER_IP=$(pct exec $CONTAINER_ID -- bash -c "hostname -I | awk '{print \$1}'" 2>/dev/null | tr -d '[:space:]')
+
 # Verify ARM is running
 if pct exec $CONTAINER_ID -- bash -c "docker ps | grep -q automatic-ripping-machine"; then
     echo "ARM Docker container is running"
     echo ""
-    echo "ARM Web UI available at: http://<CONTAINER_IP>:8080"
+    echo "ARM Web UI available at: http://${CONTAINER_IP}:8080"
     echo "Default credentials: admin / password"
 else
     echo "WARNING: ARM Docker container may not have started correctly"
