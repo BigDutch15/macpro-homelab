@@ -728,9 +728,71 @@ fi
 echo "Final container configuration:"
 cat /etc/pve/lxc/$VAR_PVE_ID.conf
 
+# Validate container configuration before starting
+CONF_FILE="/etc/pve/lxc/$VAR_PVE_ID.conf"
+echo ""
+echo "Validating container configuration..."
+
+# Check that essential settings exist in config
+VALIDATION_FAILED=0
+
+if ! grep -q "^arch:" "$CONF_FILE"; then
+    echo "ERROR: Missing 'arch' in container configuration"
+    VALIDATION_FAILED=1
+fi
+
+if ! grep -q "^cores:" "$CONF_FILE"; then
+    echo "ERROR: Missing 'cores' in container configuration"
+    VALIDATION_FAILED=1
+fi
+
+if ! grep -q "^memory:" "$CONF_FILE"; then
+    echo "ERROR: Missing 'memory' in container configuration"
+    VALIDATION_FAILED=1
+fi
+
+if ! grep -q "^rootfs:" "$CONF_FILE"; then
+    echo "ERROR: Missing 'rootfs' in container configuration"
+    VALIDATION_FAILED=1
+fi
+
+if ! grep -q "^net0:" "$CONF_FILE"; then
+    echo "ERROR: Missing 'net0' in container configuration"
+    VALIDATION_FAILED=1
+fi
+
+if [ "$VALIDATION_FAILED" -eq 1 ]; then
+    echo ""
+    echo "ERROR: Container configuration validation failed!"
+    echo "The container was not created properly. Please check the errors above."
+    echo "You may need to destroy the container and try again: pct destroy $VAR_PVE_ID"
+    exit 1
+fi
+
+echo "Container configuration validated successfully"
+
 # Start the container
-echo "Starting container..."
-pct start $VAR_PVE_ID
+echo ""
+echo "Starting container $VAR_PVE_ID..."
+if ! pct start $VAR_PVE_ID; then
+    echo "ERROR: Failed to start container $VAR_PVE_ID"
+    echo "Check the container configuration and Proxmox logs for details."
+    echo "You can view logs with: journalctl -xe"
+    exit 1
+fi
+
+# Wait for container to be fully running
+echo "Waiting for container to initialize..."
+sleep 5
+
+# Verify container is running
+if ! pct status $VAR_PVE_ID | grep -q "running"; then
+    echo "ERROR: Container $VAR_PVE_ID is not running after start"
+    echo "Container status: $(pct status $VAR_PVE_ID)"
+    exit 1
+fi
+
+echo "Container $VAR_PVE_ID started successfully"
 
 # Configure locale to prevent warnings
 configure_locale "$VAR_PVE_ID"
