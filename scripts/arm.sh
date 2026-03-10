@@ -303,6 +303,30 @@ if pct exec $CONTAINER_ID -- bash -c "docker ps | grep -q automatic-ripping-mach
     sleep 5  # Wait for ARM to create default config files
     pct exec $CONTAINER_ID -- bash -c "sed -i 's/^OUTPUTTYPE=.*/OUTPUTTYPE=flac/' /home/arm/config/abcde.conf"
     
+    # Configure arm.yaml
+    echo ""
+    echo "Configuring arm.yaml..."
+    
+    # Prompt for API keys
+    read -p "Enter ARM_API_KEY (press Enter to skip): " ARM_API_KEY
+    read -p "Enter OMDB_API_KEY (press Enter to skip): " OMDB_API_KEY
+    
+    # Modify arm.yaml with API keys if provided
+    if [ -n "$ARM_API_KEY" ]; then
+        pct exec $CONTAINER_ID -- bash -c "sed -i 's/^ARM_API_KEY:.*/ARM_API_KEY: \"$ARM_API_KEY\"/' /home/arm/config/arm.yaml"
+        echo "  ARM_API_KEY configured"
+    fi
+    
+    if [ -n "$OMDB_API_KEY" ]; then
+        pct exec $CONTAINER_ID -- bash -c "sed -i 's/^OMDB_API_KEY:.*/OMDB_API_KEY: \"$OMDB_API_KEY\"/' /home/arm/config/arm.yaml"
+        echo "  OMDB_API_KEY configured"
+    fi
+    
+    # Set rip methods to backup_dvd
+    pct exec $CONTAINER_ID -- bash -c "sed -i 's/^RIPMETHOD_DVD:.*/RIPMETHOD_DVD: \"backup_dvd\"/' /home/arm/config/arm.yaml"
+    pct exec $CONTAINER_ID -- bash -c "sed -i 's/^RIPMETHOD_BR:.*/RIPMETHOD_BR: \"backup_dvd\"/' /home/arm/config/arm.yaml"
+    echo "  RIPMETHOD_DVD and RIPMETHOD_BR set to backup_dvd"
+    
     # Restart ARM container to apply config changes
     echo "Restarting ARM container to apply configuration..."
     pct exec $CONTAINER_ID -- bash -c "docker restart automatic-ripping-machine"
