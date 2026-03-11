@@ -193,7 +193,7 @@ CREATE_CMD="$CREATE_CMD --storage $STORAGE"
 CREATE_CMD="$CREATE_CMD --rootfs $STORAGE:$ROOTFS_SIZE"
 
 # Build network configuration
-NET_CONFIG="name=eth0,bridge=$BRIDGE,tag=$VLAN"
+NET_CONFIG="name=eth0,bridge=$BRIDGE,tag=$VLAN,firewall=1,type=veth"
 
 # Add IP configuration
 if [[ "$IP_MODE" == "static" ]]; then
@@ -215,10 +215,25 @@ CREATE_CMD="$CREATE_CMD --unprivileged $UNPRIVILEGED"
 # Password will be set separately via chpasswd for security
 CREATE_CMD="$CREATE_CMD --password <REDACTED>"
 
+# Add start flag
+CREATE_CMD="$CREATE_CMD --start 0"
+
 # Display the command (with password redacted)
 debug_section "Container Creation Command"
 echo "[DEBUG] Command to execute:" >&2
-echo "[DEBUG] $CREATE_CMD" >&2
+echo "[DEBUG] pct create $PVE_ID $TEMPLATE \\" >&2
+echo "[DEBUG]   --hostname $HOSTNAME \\" >&2
+echo "[DEBUG]   --arch amd64 \\" >&2
+echo "[DEBUG]   --ostype debian \\" >&2
+echo "[DEBUG]   --cores $CPU_CORES \\" >&2
+echo "[DEBUG]   --memory $MEMORY \\" >&2
+echo "[DEBUG]   --swap $SWAP \\" >&2
+echo "[DEBUG]   --storage $STORAGE \\" >&2
+echo "[DEBUG]   --rootfs $STORAGE:$ROOTFS_SIZE \\" >&2
+echo "[DEBUG]   --net0 $NET_CONFIG \\" >&2
+echo "[DEBUG]   --unprivileged $UNPRIVILEGED \\" >&2
+echo "[DEBUG]   --password <REDACTED> \\" >&2
+echo "[DEBUG]   --start 0" >&2
 echo "" >&2
 
 # TODO: Execute container creation

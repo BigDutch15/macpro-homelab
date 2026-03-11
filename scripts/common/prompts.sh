@@ -265,31 +265,25 @@ getMacAddress() {
 # Get Root Password with confirmation
 # Usage: VAR_PASSWORD=$(getRootPassword)
 getRootPassword() {
+    ensureWhiptail
     local password1
     local password2
     
     while true; do
-        echo "" >&2
-        echo "========================================" >&2
-        echo "Root Password" >&2
-        echo "========================================" >&2
-        echo -n "Enter root password: " >&2
-        read -s password1
-        echo "" >&2
+        password1=$(whiptail --title "$PROMPT_TITLE" --passwordbox "Enter root password:" 8 60 3>&1 1>&2 2>&3) || exit 1
         
-        echo -n "Re-type root password: " >&2
-        read -s password2
-        echo "" >&2
+        if [[ -z "$password1" ]]; then
+            whiptail --title "$PROMPT_TITLE" --msgbox "Password cannot be empty.\n\nPlease try again." 8 50
+            continue
+        fi
+        
+        password2=$(whiptail --title "$PROMPT_TITLE" --passwordbox "Re-type root password:" 8 60 3>&1 1>&2 2>&3) || exit 1
         
         if [[ "$password1" == "$password2" ]]; then
-            if [[ -z "$password1" ]]; then
-                echo "[ERROR] Password cannot be empty" >&2
-                continue
-            fi
             echo "$password1"
             return 0
         else
-            echo "[ERROR] Passwords do not match. Please try again." >&2
+            whiptail --title "$PROMPT_TITLE" --msgbox "Passwords do not match.\n\nPlease try again." 8 50
         fi
     done
 }
