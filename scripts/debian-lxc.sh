@@ -196,7 +196,19 @@ if [ "$SILENT_MODE" -eq 0 ]; then
     # Network Settings
     VAR_BRIDGE=$(whiptail --title "$TITLE" --inputbox "Network Bridge:" 8 60 "$VAR_BRIDGE" 3>&1 1>&2 2>&3) || exit 1
     VAR_VLAN=$(whiptail --title "$TITLE" --inputbox "VLAN Tag (0 for none):" 8 60 "$VAR_VLAN" 3>&1 1>&2 2>&3) || exit 1
-    VAR_IP=$(whiptail --title "$TITLE" --inputbox "IP Address (dhcp or static IP):" 8 60 "$VAR_IP" 3>&1 1>&2 2>&3) || exit 1
+    # IP Configuration - DHCP or Static selection
+    IP_MODE=$(whiptail --title "$TITLE" --menu "IP Configuration:" 12 60 2 \
+        "dhcp" "Automatic IP via DHCP" \
+        "static" "Static IP Address" \
+        3>&1 1>&2 2>&3)
+    [ -z "$IP_MODE" ] && IP_MODE="dhcp"
+
+    if [ "$IP_MODE" = "static" ]; then
+        VAR_IP=$(whiptail --title "$TITLE" --inputbox "Static IP Address (CIDR format, e.g. 192.168.1.100/24):" 8 70 "" 3>&1 1>&2 2>&3) || exit 1
+        VAR_GATEWAY=$(whiptail --title "$TITLE" --inputbox "Gateway Address (e.g. 192.168.1.1):" 8 60 "" 3>&1 1>&2 2>&3) || exit 1
+    else
+        VAR_IP="dhcp"
+    fi
 
     # Container Type
     if whiptail --title "$TITLE" --yesno "Create as Privileged Container?\n\nPrivileged containers have full access to host resources.\nRequired for GPU passthrough.\n\nSelect Yes for privileged, No for unprivileged." 12 60; then
@@ -231,7 +243,7 @@ Memory: ${VAR_RAM}MB
 Swap: ${VAR_SWAP}MB
 Storage: ${VAR_ROOTFS_SIZE}GB on $VAR_STORAGE
 Network: $VAR_BRIDGE (VLAN $VAR_VLAN)
-IP: $VAR_IP
+IP: $VAR_IP$([ -n "$VAR_GATEWAY" ] && echo " (Gateway: $VAR_GATEWAY)")
 Container Type: $([ $VAR_UNPRIVILEGED -eq 0 ] && echo 'Privileged' || echo 'Unprivileged')
 GPU Passthrough: $([ $VAR_GPU_PASSTHROUGH -eq 1 ] && echo 'Yes' || echo 'No')
 Optical Passthrough: $([ $VAR_OPTICAL_PASSTHROUGH -eq 1 ] && echo 'Yes' || echo 'No')"
@@ -256,6 +268,7 @@ if [ "$SILENT_MODE" -eq 1 ]; then
     echo "  Storage: ${VAR_ROOTFS_SIZE}GB on $VAR_STORAGE"
     echo "  Network: $VAR_BRIDGE (VLAN $VAR_VLAN)"
     echo "  IP: $VAR_IP"
+    [ -n "$VAR_GATEWAY" ] && echo "  Gateway: $VAR_GATEWAY"
     echo "  Container Type: $([ $VAR_UNPRIVILEGED -eq 0 ] && echo 'Privileged' || echo 'Unprivileged')"
     echo "  GPU Passthrough: $([ $VAR_GPU_PASSTHROUGH -eq 1 ] && echo 'Yes' || echo 'No')"
     echo "  Optical Passthrough: $([ $VAR_OPTICAL_PASSTHROUGH -eq 1 ] && echo 'Yes' || echo 'No')"
