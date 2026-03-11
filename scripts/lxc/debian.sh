@@ -212,9 +212,6 @@ CREATE_CMD="$CREATE_CMD --net0 $NET_CONFIG"
 # Add unprivileged flag
 CREATE_CMD="$CREATE_CMD --unprivileged $UNPRIVILEGED"
 
-# Password will be set separately via chpasswd for security
-CREATE_CMD="$CREATE_CMD --password <REDACTED>"
-
 # Add start flag
 CREATE_CMD="$CREATE_CMD --start 0"
 
@@ -240,8 +237,8 @@ echo "" >&2
 step "Creating container..."
 info "Executing: pct create $PVE_ID..."
 
-# Execute the actual command (with real password)
-if eval "$CREATE_CMD" --password "$PASSWORD"; then
+# Execute the actual command (append password at execution time)
+if eval "$CREATE_CMD --password \"$PASSWORD\""; then
     success "Container $PVE_ID created successfully"
 else
     error "Failed to create container $PVE_ID"
