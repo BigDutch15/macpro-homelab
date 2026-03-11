@@ -236,8 +236,38 @@ echo "[DEBUG]   --password <REDACTED> \\" >&2
 echo "[DEBUG]   --start 0" >&2
 echo "" >&2
 
-# TODO: Execute container creation
-# TODO: Set root password securely using: echo "root:$PASSWORD" | pct exec $PVE_ID -- chpasswd
+# Step 16: Execute container creation
+step "Creating container..."
+info "Executing: pct create $PVE_ID..."
+
+# Execute the actual command (with real password)
+if eval "$CREATE_CMD" --password "$PASSWORD"; then
+    success "Container $PVE_ID created successfully"
+else
+    error "Failed to create container $PVE_ID"
+    exit 1
+fi
+
+# Step 17: Start the container
+step "Starting container..."
+if pct start "$PVE_ID"; then
+    success "Container $PVE_ID started successfully"
+else
+    warn "Container created but failed to start"
+    exit 1
+fi
+
+# Step 18: Display completion message
+success "Container creation complete!"
+info "Container ID: $PVE_ID"
+info "Hostname: $HOSTNAME"
+info "IP: $IP_ADDRESS"
+if [[ "$IP_MODE" == "static" ]]; then
+    info "Gateway: $GATEWAY"
+fi
+info ""
+info "You can access the container with:"
+info "  pct enter $PVE_ID"
 
 exit 0
 
