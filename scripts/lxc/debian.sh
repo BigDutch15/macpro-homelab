@@ -45,6 +45,7 @@ debug_var REPO_URL
 info "Debian LXC Container Creation Script Initiated"
 
 # Step 1: Get Privileged/Unprivileged selection
+step "Container privilege selection..."
 UNPRIVILEGED=$(getPrivileged)
 debug_var UNPRIVILEGED
 
@@ -135,10 +136,11 @@ fi
 step "Review Configuration"
 CONFIRM_MSG="Please review the container configuration:
 
-Privileged: $([ "$UNPRIVILEGED" -eq 0 ] && echo "Yes" || echo "No")
+
 ID: $PVE_ID
 Hostname: $HOSTNAME
 Template: $TEMPLATE
+Privileged: $([ "$UNPRIVILEGED" -eq 0 ] && echo "Yes" || echo "No")
 CPU Cores: $CPU_CORES
 Memory: ${MEMORY}MB
 Swap: ${SWAP}MB
