@@ -96,8 +96,15 @@ if [[ -f "$(dirname "${BASH_SOURCE[0]}")/common/prompts.sh" ]]; then
     source "$(dirname "${BASH_SOURCE[0]}")/common/prompts.sh"
     debug "Loaded prompts from local file"
 else
-    source <(curl -fsSL "$REPO_URL/common/prompts.sh")
-    debug "Loaded prompts from remote URL"
+    PROMPTS_CONTENT=$(curl -fsSL "$REPO_URL/common/prompts.sh" 2>&1)
+    if [[ $? -eq 0 && -n "$PROMPTS_CONTENT" ]]; then
+        source <(echo "$PROMPTS_CONTENT")
+        debug "Loaded prompts from remote URL"
+    else
+        error "Failed to load prompts.sh from $REPO_URL/common/prompts.sh"
+        error "Response: $PROMPTS_CONTENT"
+        exit 1
+    fi
 fi
 
 # =============================================================================
