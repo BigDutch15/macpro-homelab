@@ -117,15 +117,29 @@ setPromptTitle "PVE Entity Creation"
 show_main_menu() {
     ensureWhiptail
     
+    # Define menu items
+    local menu_items=(
+        "1" "LXC - Debian"
+        "2" "Exit"
+    )
+    
     local choice
     choice=$(whiptail --title "PVE Entity Creation" --menu "Select entity to create:" 12 60 3 \
-        "1" "LXC - Debian 13" \
-        "2" "Exit" \
+        "${menu_items[@]}" \
         3>&1 1>&2 2>&3)
+    
+    # Get the label for the selected choice
+    local choice_label=""
+    for ((i=0; i<${#menu_items[@]}; i+=2)); do
+        if [[ "${menu_items[i]}" == "$choice" ]]; then
+            choice_label="${menu_items[i+1]}"
+            break
+        fi
+    done
     
     case $choice in
         1)
-            info "Selected: Debian LXC"
+            info "Selected: $choice_label"
             debug "Running lxc/debian.sh"
             
             # Export repo variables for debian.sh
