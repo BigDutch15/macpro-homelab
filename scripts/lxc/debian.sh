@@ -109,8 +109,20 @@ if [[ "$IP_MODE" == "static" ]]; then
     debug_var DEFAULT_IP
     IP_ADDRESS=$(getStaticIp "${DEFAULT_IP}/24")
     debug_var IP_ADDRESS
+    
+    # Derive default gateway from host IP and VLAN
+    DEFAULT_GATEWAY=$(deriveDefaultGateway "$VLAN")
+    debug_var DEFAULT_GATEWAY
+    GATEWAY=$(getGateway "$DEFAULT_GATEWAY")
+    debug_var GATEWAY
+    MAC_ADDRESS=""
 else
     IP_ADDRESS="dhcp"
+    GATEWAY=""
+    
+    # Prompt for MAC address (optional)
+    MAC_ADDRESS=$(getMacAddress)
+    debug_var MAC_ADDRESS
 fi
 
 # TODO: Implement remaining container creation steps

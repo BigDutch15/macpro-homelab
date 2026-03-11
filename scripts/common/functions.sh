@@ -57,6 +57,43 @@ deriveDefaultIp() {
     echo "${octet1}.${octet2}.${octet3}.${octet4}"
 }
 
+# Derive default gateway from host IP and VLAN
+# Usage: deriveDefaultGateway <vlan>
+# Returns: derived gateway address
+deriveDefaultGateway() {
+    local vlan=$1
+    
+    # Get host IP and extract first two octets
+    local host_ip=$(getHostIp)
+    if [[ -z "$host_ip" ]]; then
+        echo "10.0.${vlan}.253"
+        return
+    fi
+    
+    local octet1=$(echo "$host_ip" | cut -d. -f1)
+    local octet2=$(echo "$host_ip" | cut -d. -f2)
+    
+    # Third octet = VLAN, fourth octet = 253
+    echo "${octet1}.${octet2}.${vlan}.253"
+}
+
+# Validate MAC address format
+# Usage: isValidMac "AA:BB:CC:DD:EE:FF"
+# Returns: 0 if valid, 1 if invalid
+isValidMac() {
+    local mac=$1
+    
+    # Allow empty/blank
+    [[ -z "$mac" ]] && return 0
+    
+    # Check format: XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX
+    if [[ "$mac" =~ ^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Check if container/VM ID exists
 idExists() {
     local id=$1

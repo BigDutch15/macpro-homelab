@@ -201,12 +201,32 @@ getStaticIp() {
 }
 
 # Get Gateway Address
-# Usage: VAR_GATEWAY=$(getGateway)
+# Usage: VAR_GATEWAY=$(getGateway "default_gateway")
 getGateway() {
+    local default="${1:-}"
     ensureWhiptail
     local result
-    result=$(whiptail --title "$PROMPT_TITLE" --inputbox "Gateway Address (e.g. 192.168.1.1):" 8 60 "" 3>&1 1>&2 2>&3) || exit 1
+    result=$(whiptail --title "$PROMPT_TITLE" --inputbox "Gateway Address (e.g. 192.168.1.1):" 8 60 "$default" 3>&1 1>&2 2>&3) || exit 1
     echo "$result"
+}
+
+# Get MAC Address with validation
+# Usage: VAR_MAC=$(getMacAddress)
+getMacAddress() {
+    ensureWhiptail
+    local result
+    
+    while true; do
+        result=$(whiptail --title "$PROMPT_TITLE" --inputbox "MAC Address (optional, format: AA:BB:CC:DD:EE:FF):\n\nLeave blank for auto-generated MAC." 10 70 "" 3>&1 1>&2 2>&3) || exit 1
+        
+        # Validate MAC address
+        if isValidMac "$result"; then
+            echo "$result"
+            return 0
+        else
+            whiptail --title "$PROMPT_TITLE" --msgbox "Invalid MAC address format.\n\nExpected format: AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF\n\nPlease try again." 10 60
+        fi
+    done
 }
 
 # Get Privileged Container selection
