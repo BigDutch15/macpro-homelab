@@ -44,12 +44,7 @@ debug_var REPO_URL
 
 info "Debian LXC Container Creation Script Initiated"
 
-# Step 1: Get Privileged/Unprivileged selection
-step "Container privilege selection..."
-UNPRIVILEGED=$(getPrivileged)
-debug_var UNPRIVILEGED
-
-# Step 2: Ensure template is available
+# Step 1: Ensure template is available
 step "Checking Debian 13 template..."
 TEMPLATE=$(ensureTemplate "debian" "13")
 if [[ -z "$TEMPLATE" ]]; then
@@ -59,7 +54,7 @@ fi
 debug_var TEMPLATE
 success "Template ready: $TEMPLATE"
 
-# Step 3: Get PVE ID
+# Step 2: Get PVE ID
 step "Getting next available PVE ID..."
 DEFAULT_ID=$(getNextPveId)
 debug_var DEFAULT_ID
@@ -72,6 +67,11 @@ if idExists "$PVE_ID"; then
     exit 1
 fi
 success "PVE ID: $PVE_ID"
+
+# Step 3: Get Privileged/Unprivileged selection
+step "Container privilege selection..."
+UNPRIVILEGED=$(getPrivileged)
+debug_var UNPRIVILEGED
 
 # Step 4: Get Hostname
 HOSTNAME=$(getHostname "lxc-debian")
