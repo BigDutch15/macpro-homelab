@@ -12,11 +12,11 @@ checkProxmox() {
     fi
 }
 
-# Get available network bridges
+# Get available network bridges (excludes firewall bridges)
 # Usage: getAvailableBridges
-# Returns: space-separated list of bridge names
+# Returns: newline-separated list of bridge names
 getAvailableBridges() {
-    ip -o link show type bridge 2>/dev/null | awk -F': ' '{print $2}' | sort
+    ip -o link show type bridge 2>/dev/null | awk -F': ' '{print $2}' | grep '^vmbr' | sort
 }
 
 # Check if container/VM ID exists
