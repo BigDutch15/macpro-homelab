@@ -241,11 +241,12 @@ getMacAddress() {
 # Returns: 0 for privileged, 1 for unprivileged
 getPrivileged() {
     ensureWhiptail
-    if whiptail --title "$PROMPT_TITLE" --yesno "Create as Privileged Container?\n\nPrivileged containers have full access to host resources.\nRequired for GPU passthrough and NFS mounts.\n\nSelect Yes for privileged, No for unprivileged." 12 60; then
-        echo "0"
-    else
-        echo "1"
-    fi
+    local result
+    result=$(whiptail --title "$PROMPT_TITLE" --menu "Container Privilege Level:\n\nPrivileged containers have full access to host resources.\nRequired for GPU passthrough and NFS mounts." 15 70 2 \
+        "0" "Privileged (full host access)" \
+        "1" "Unprivileged (restricted)" \
+        3>&1 1>&2 2>&3) || exit 1
+    echo "$result"
 }
 
 # Get Passthrough Options
