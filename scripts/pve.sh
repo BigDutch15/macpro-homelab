@@ -87,3 +87,46 @@ echo "  Branch: $REPO_BRANCH"
 echo "  URL:    $REPO_URL"
 echo ""
 
+# =============================================================================
+# Source Prompts
+# =============================================================================
+debug_section "Loading Prompts"
+
+if [[ -f "$(dirname "${BASH_SOURCE[0]}")/common/prompts.sh" ]]; then
+    source "$(dirname "${BASH_SOURCE[0]}")/common/prompts.sh"
+    debug "Loaded prompts from local file"
+else
+    source <(curl -fsSL "$REPO_URL/common/prompts.sh")
+    debug "Loaded prompts from remote URL"
+fi
+
+# =============================================================================
+# Main Menu
+# =============================================================================
+debug_section "Main Menu"
+
+setPromptTitle "PVE Entity Creation"
+
+show_main_menu() {
+    ensureWhiptail
+    
+    local choice
+    choice=$(whiptail --title "PVE Entity Creation" --menu "Select entity to create:" 12 60 3 \
+        "1" "LXC - Debian 13" \
+        "2" "Exit" \
+        3>&1 1>&2 2>&3)
+    
+    case $choice in
+        1)
+            info "Selected: Debian 13 LXC"
+            debug "Would run lxc/debian.sh here"
+            # TODO: source and run debian.sh
+            ;;
+        2|"")
+            info "Exiting"
+            exit 0
+            ;;
+    esac
+}
+
+show_main_menu
