@@ -17,6 +17,7 @@
 #
 # OPTIONS:
 #   --branch <name>    Git branch to use for sourcing scripts (default: main)
+#   --debug            Enable debug output
 #   --help             Show this help message
 #
 # EXAMPLES:
@@ -29,13 +30,22 @@
 REPO_OWNER="BigDutch15"
 REPO_NAME="macpro-homelab"
 REPO_BRANCH="main"
+DEBUG=0
 
-# Parse arguments
+# =============================================================================
+# Parse Arguments (before sourcing debug.sh so --debug works)
+# =============================================================================
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --branch)
             REPO_BRANCH="$2"
+            DEBUG=1  # Enable debug by default when testing branches
             shift 2
+            ;;
+        --debug)
+            DEBUG=1
+            shift
             ;;
         --help)
             head -28 "$0" | tail -24
@@ -47,10 +57,30 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Build repository URL
+# =============================================================================
+# Build Repository URL
+# =============================================================================
 REPO_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}/scripts"
 
-echo "=== Repository Configuration ==="
+# =============================================================================
+# Source Debug Framework
+# =============================================================================
+if [[ -f "$(dirname "${BASH_SOURCE[0]}")/common/debug.sh" ]]; then
+    source "$(dirname "${BASH_SOURCE[0]}")/common/debug.sh"
+else
+    source <(curl -fsSL "$REPO_URL/common/debug.sh")
+fi
+
+# =============================================================================
+# Display Configuration
+# =============================================================================
+debug_section "Repository Configuration"
+debug_var REPO_OWNER
+debug_var REPO_NAME
+debug_var REPO_BRANCH
+debug_var REPO_URL
+
+info "Repository Configuration"
 echo "  Owner:  $REPO_OWNER"
 echo "  Repo:   $REPO_NAME"
 echo "  Branch: $REPO_BRANCH"
