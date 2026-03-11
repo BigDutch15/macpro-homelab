@@ -44,7 +44,11 @@ debug_var REPO_URL
 
 info "Debian LXC Container Creation Script Initiated"
 
-# Step 1: Ensure template is available
+# Step 1: Get Privileged/Unprivileged selection
+UNPRIVILEGED=$(getPrivileged)
+debug_var UNPRIVILEGED
+
+# Step 2: Ensure template is available
 step "Checking Debian 13 template..."
 TEMPLATE=$(ensureTemplate "debian" "13")
 if [[ -z "$TEMPLATE" ]]; then
@@ -54,7 +58,7 @@ fi
 debug_var TEMPLATE
 success "Template ready: $TEMPLATE"
 
-# Step 2: Get PVE ID
+# Step 3: Get PVE ID
 step "Getting next available PVE ID..."
 DEFAULT_ID=$(getNextPveId)
 debug_var DEFAULT_ID
@@ -68,38 +72,38 @@ if idExists "$PVE_ID"; then
 fi
 success "PVE ID: $PVE_ID"
 
-# Step 3: Get Hostname
+# Step 4: Get Hostname
 HOSTNAME=$(getHostname "lxc-debian")
 debug_var HOSTNAME
 
-# Step 4: Get CPU Cores
+# Step 5: Get CPU Cores
 CPU_CORES=$(getCpuCores "2")
 debug_var CPU_CORES
 
-# Step 5: Get Memory
+# Step 6: Get Memory
 MEMORY=$(getMemory "2048")
 debug_var MEMORY
 
-# Step 6: Get Swap (default to 50% of memory)
+# Step 7: Get Swap (default to 50% of memory)
 SWAP_DEFAULT=$((MEMORY / 2))
 SWAP=$(getSwap "$SWAP_DEFAULT")
 debug_var SWAP
 
-# Step 7: Get Root Filesystem Size
+# Step 8: Get Root Filesystem Size
 ROOTFS_SIZE=$(getRootfsSize "16")
 debug_var ROOTFS_SIZE
 
-# Step 8: Get Network Bridge
+# Step 9: Get Network Bridge
 BRIDGE=$(getNetworkBridge "vmbr0")
 debug_var BRIDGE
 
-# Step 9: Get VLAN (default derived from ID: digits before last 3)
+# Step 10: Get VLAN (default derived from ID: digits before last 3)
 VLAN_DEFAULT=$((PVE_ID / 1000))
 [[ "$VLAN_DEFAULT" -eq 0 ]] && VLAN_DEFAULT=1
 VLAN=$(getVlanTag "$VLAN_DEFAULT")
 debug_var VLAN
 
-# Step 10: Get IP Configuration
+# Step 11: Get IP Configuration
 IP_MODE=$(getIpMode)
 debug_var IP_MODE
 
@@ -127,10 +131,11 @@ else
     debug_var MAC_ADDRESS
 fi
 
-# Step 11: Confirm configuration
+# Step 12: Confirm configuration
 step "Review Configuration"
 CONFIRM_MSG="Please review the container configuration:
 
+Privileged: $([ "$UNPRIVILEGED" -eq 0 ] && echo "Yes" || echo "No")
 ID: $PVE_ID
 Hostname: $HOSTNAME
 Template: $TEMPLATE
