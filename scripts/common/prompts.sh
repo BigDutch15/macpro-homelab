@@ -117,13 +117,39 @@ getSwap() {
     echo "$result"
 }
 
-# Get Storage Location
+# Get Storage Location (selector from available storage)
 # Usage: VAR_STORAGE=$(getStorage "local-lvm")
 getStorage() {
     local default="${1:-local-lvm}"
     ensureWhiptail
+
+    # Get available storage and build menu items
+    local storages menu_items=()
+    storages=$(getAvailableStorage)
+
+    if [[ -z "$storages" ]]; then
+        # Fallback to input if no storage found
+        local result
+        result=$(whiptail --title "$PROMPT_TITLE" --inputbox "Storage Location:" 8 60 "$default" 3>&1 1>&2 2>&3) || exit 1
+        echo "$result"
+        return
+    fi
+
+    # Build menu items array
+    local first_storage=""
+    while IFS= read -r storage; do
+        [[ -z "$first_storage" ]] && first_storage="$storage"
+        menu_items+=("$storage" "")
+    done <<< "$storages"
+
+    # Use default if it exists in list, otherwise use first storage
+    [[ ! " $storages " =~ " $default " ]] && default="$first_storage"
+
     local result
-    result=$(whiptail --title "$PROMPT_TITLE" --inputbox "Storage Location:" 8 60 "$default" 3>&1 1>&2 2>&3) || exit 1
+    result=$(whiptail --title "$PROMPT_TITLE" --menu "Select Storage Location:" 15 60 6 \
+        "${menu_items[@]}" \
+        --default-item "$default" \
+        3>&1 1>&2 2>&3) || exit 1
     echo "$result"
 }
 
@@ -232,6 +258,38 @@ getMacAddress() {
             return 0
         else
             whiptail --title "$PROMPT_TITLE" --msgbox "Invalid MAC address format.\n\nExpected format: AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF\n\nPlease try again." 10 60
+        fi
+    done
+}
+
+# Get Root Password with confirmation
+# Usage: VAR_PASSWORD=$(getRootPassword)
+getRootPassword() {
+    local password1
+    local password2
+    
+    while true; do
+        echo "" >&2
+        echo "========================================" >&2
+        echo "Root Password" >&2
+        echo "========================================" >&2
+        echo -n "Enter root password: " >&2
+        read -s password1
+        echo "" >&2
+        
+        echo -n "Re-type root password: " >&2
+        read -s password2
+        echo "" >&2
+        
+        if [[ "$password1" == "$password2" ]]; then
+            if [[ -z "$password1" ]]; then
+                echo "[ERROR] Password cannot be empty" >&2
+                continue
+            fi
+            echo "$password1"
+            return 0
+        else
+            echo "[ERROR] Passwords do not match. Please try again." >&2
         fi
     done
 }

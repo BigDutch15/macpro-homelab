@@ -19,6 +19,13 @@ getAvailableBridges() {
     ip -o link show type bridge 2>/dev/null | awk -F': ' '{print $2}' | grep '^vmbr' | sort
 }
 
+# Get available storage locations for containers
+# Usage: getAvailableStorage
+# Returns: newline-separated list of storage IDs
+getAvailableStorage() {
+    pvesm status 2>/dev/null | awk 'NR>1 && ($2=="dir" || $2=="lvm" || $2=="lvmthin" || $2=="zfspool") {print $1}' | sort
+}
+
 # Get host IP address (first non-loopback IPv4)
 # Usage: getHostIp
 # Returns: IP address or empty

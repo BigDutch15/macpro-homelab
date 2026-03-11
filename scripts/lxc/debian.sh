@@ -73,38 +73,46 @@ step "Container privilege selection..."
 UNPRIVILEGED=$(getPrivileged)
 debug_var UNPRIVILEGED
 
-# Step 4: Get Hostname
+# Step 4: Get Root Password
+PASSWORD=$(getRootPassword)
+# Note: Password is stored securely and never displayed
+
+# Step 5: Get Hostname
 HOSTNAME=$(getHostname "lxc-debian")
 debug_var HOSTNAME
 
-# Step 5: Get CPU Cores
+# Step 6: Get CPU Cores
 CPU_CORES=$(getCpuCores "2")
 debug_var CPU_CORES
 
-# Step 6: Get Memory
+# Step 7: Get Memory
 MEMORY=$(getMemory "2048")
 debug_var MEMORY
 
-# Step 7: Get Swap (default to 50% of memory)
+# Step 8: Get Swap (default to 50% of memory)
 SWAP_DEFAULT=$((MEMORY / 2))
 SWAP=$(getSwap "$SWAP_DEFAULT")
 debug_var SWAP
 
-# Step 8: Get Root Filesystem Size
+# Step 9: Get Storage Location
+STORAGE=$(getStorage "local-lvm")
+debug_var STORAGE
+
+# Step 10: Get Root Filesystem Size
 ROOTFS_SIZE=$(getRootfsSize "16")
 debug_var ROOTFS_SIZE
 
-# Step 9: Get Network Bridge
+# Step 11: Get Network Bridge
 BRIDGE=$(getNetworkBridge "vmbr0")
 debug_var BRIDGE
 
-# Step 10: Get VLAN (default derived from ID: digits before last 3)
+# Step 12: Get VLAN (default derived from ID: digits before last 3)
 VLAN_DEFAULT=$((PVE_ID / 1000))
 [[ "$VLAN_DEFAULT" -eq 0 ]] && VLAN_DEFAULT=1
 VLAN=$(getVlanTag "$VLAN_DEFAULT")
 debug_var VLAN
 
-# Step 11: Get IP Configuration
+# Step 13: Get IP Configuration
 IP_MODE=$(getIpMode)
 debug_var IP_MODE
 
@@ -132,7 +140,7 @@ else
     debug_var MAC_ADDRESS
 fi
 
-# Step 12: Confirm configuration
+# Step 14: Confirm configuration
 step "Review Configuration"
 CONFIRM_MSG="Please review the container configuration:
 
@@ -144,6 +152,7 @@ Privileged: $([ "$UNPRIVILEGED" -eq 0 ] && echo "Yes" || echo "No")
 CPU Cores: $CPU_CORES
 Memory: ${MEMORY}MB
 Swap: ${SWAP}MB
+Storage: $STORAGE
 Root FS: ${ROOTFS_SIZE}GB
 Bridge: $BRIDGE
 VLAN: $VLAN
@@ -169,7 +178,51 @@ if ! whiptail --title "Confirm Configuration" --yesno "$CONFIRM_MSG" 20 70; then
 fi
 success "Configuration confirmed"
 
-# TODO: Implement remaining container creation steps
+# Step 15: Build and display container creation command
+step "Building container creation command..."
+
+# Build the pct create command
+CREATE_CMD="pct create $PVE_ID $TEMPLATE"
+CREATE_CMD="$CREATE_CMD --hostname $HOSTNAME"
+CREATE_CMD="$CREATE_CMD --arch amd64"
+CREATE_CMD="$CREATE_CMD --ostype debian"
+CREATE_CMD="$CREATE_CMD --cores $CPU_CORES"
+CREATE_CMD="$CREATE_CMD --memory $MEMORY"
+CREATE_CMD="$CREATE_CMD --swap $SWAP"
+CREATE_CMD="$CREATE_CMD --storage $STORAGE"
+CREATE_CMD="$CREATE_CMD --rootfs $STORAGE:$ROOTFS_SIZE"
+
+# Build network configuration
+NET_CONFIG="name=eth0,bridge=$BRIDGE,tag=$VLAN"
+
+# Add IP configuration
+if [[ "$IP_MODE" == "static" ]]; then
+    NET_CONFIG="$NET_CONFIG,ip=$IP_ADDRESS,gw=$GATEWAY"
+else
+    NET_CONFIG="$NET_CONFIG,ip=dhcp"
+fi
+
+# Add MAC if specified
+if [[ -n "$MAC_ADDRESS" ]]; then
+    NET_CONFIG="$NET_CONFIG,hwaddr=$MAC_ADDRESS"
+fi
+
+CREATE_CMD="$CREATE_CMD --net0 $NET_CONFIG"
+
+# Add unprivileged flag
+CREATE_CMD="$CREATE_CMD --unprivileged $UNPRIVILEGED"
+
+# Password will be set separately via chpasswd for security
+CREATE_CMD="$CREATE_CMD --password <REDACTED>"
+
+# Display the command (with password redacted)
+debug_section "Container Creation Command"
+echo "[DEBUG] Command to execute:" >&2
+echo "[DEBUG] $CREATE_CMD" >&2
+echo "" >&2
+
+# TODO: Execute container creation
+# TODO: Set root password securely using: echo "root:$PASSWORD" | pct exec $PVE_ID -- chpasswd
 
 exit 0
 
