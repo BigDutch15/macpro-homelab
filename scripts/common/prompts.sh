@@ -8,10 +8,17 @@
 #   VAR_CONTAINER_ID=$(getContainerId "900")
 #   VAR_HOSTNAME=$(getHostname "lxc-debian")
 
-# Ensure whiptail is available
+# Ensure whiptail is available and terminal is interactive
 ensureWhiptail() {
     if ! command -v whiptail &> /dev/null; then
         apt-get update && apt-get install -y whiptail >&2
+    fi
+    
+    # Check if we have a proper TTY for whiptail
+    if ! tty -s; then
+        echo "[ERROR] No interactive terminal available for whiptail dialogs" >&2
+        echo "[ERROR] This script requires an interactive terminal (SSH with -t flag)" >&2
+        exit 1
     fi
 }
 
