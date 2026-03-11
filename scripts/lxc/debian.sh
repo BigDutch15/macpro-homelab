@@ -36,6 +36,12 @@ fi
 # =============================================================================
 # Debian LXC Container Creation
 # =============================================================================
+debug_section "Debian LXC Container Creation"
+debug_var REPO_OWNER
+debug_var REPO_NAME
+debug_var REPO_BRANCH
+debug_var REPO_URL
+
 info "Debian LXC Container Creation Script Initiated"
 
 # TODO: Implement container creation steps
