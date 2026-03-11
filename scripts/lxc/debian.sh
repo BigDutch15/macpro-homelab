@@ -118,6 +118,7 @@ if [[ "$IP_MODE" == "static" ]]; then
     MAC_ADDRESS=""
 else
     IP_ADDRESS="dhcp"
+    debug_var IP_ADDRESS
     GATEWAY=""
     debug_var GATEWAY
     
@@ -125,6 +126,41 @@ else
     MAC_ADDRESS=$(getMacAddress)
     debug_var MAC_ADDRESS
 fi
+
+# Step 11: Confirm configuration
+step "Review Configuration"
+CONFIRM_MSG="Please review the container configuration:
+
+ID: $PVE_ID
+Hostname: $HOSTNAME
+Template: $TEMPLATE
+CPU Cores: $CPU_CORES
+Memory: ${MEMORY}MB
+Swap: ${SWAP}MB
+Root FS: ${ROOTFS_SIZE}GB
+Bridge: $BRIDGE
+VLAN: $VLAN
+IP: $IP_ADDRESS"
+
+if [[ "$IP_MODE" == "static" ]]; then
+    CONFIRM_MSG="$CONFIRM_MSG
+Gateway: $GATEWAY"
+fi
+
+if [[ -n "$MAC_ADDRESS" ]]; then
+    CONFIRM_MSG="$CONFIRM_MSG
+MAC: $MAC_ADDRESS"
+fi
+
+CONFIRM_MSG="$CONFIRM_MSG
+
+Proceed with container creation?"
+
+if ! whiptail --title "Confirm Configuration" --yesno "$CONFIRM_MSG" 20 70; then
+    warn "Container creation cancelled by user"
+    exit 0
+fi
+success "Configuration confirmed"
 
 # TODO: Implement remaining container creation steps
 
