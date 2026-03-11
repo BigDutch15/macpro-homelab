@@ -54,6 +54,20 @@ fi
 debug_var TEMPLATE
 success "Template ready: $TEMPLATE"
 
+# Step 2: Get PVE ID
+step "Getting next available PVE ID..."
+DEFAULT_ID=$(getNextPveId)
+debug_var DEFAULT_ID
+PVE_ID=$(getContainerId "$DEFAULT_ID")
+debug_var PVE_ID
+
+# Validate ID doesn't already exist
+if idExists "$PVE_ID"; then
+    error "Container/VM $PVE_ID already exists!"
+    exit 1
+fi
+success "PVE ID: $PVE_ID"
+
 # TODO: Implement remaining container creation steps
 
 exit 0

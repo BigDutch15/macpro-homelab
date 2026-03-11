@@ -18,6 +18,23 @@ idExists() {
     pct status $id &>/dev/null || qm status $id &>/dev/null
 }
 
+# Get the next available PVE ID (highest current ID + 1)
+# Usage: getNextPveId
+# Returns: next available ID number
+getNextPveId() {
+    local max_id=99
+    
+    # Get highest container ID
+    local max_ct=$(pct list 2>/dev/null | tail -n +2 | awk '{print $1}' | sort -n | tail -1)
+    [[ -n "$max_ct" && "$max_ct" -gt "$max_id" ]] && max_id=$max_ct
+    
+    # Get highest VM ID
+    local max_vm=$(qm list 2>/dev/null | tail -n +2 | awk '{print $1}' | sort -n | tail -1)
+    [[ -n "$max_vm" && "$max_vm" -gt "$max_id" ]] && max_id=$max_vm
+    
+    echo $((max_id + 1))
+}
+
 # Check if template exists locally
 # Usage: templateExists "debian-13-standard_13.0-1_amd64.tar.zst"
 # Returns: 0 if exists, 1 if not
