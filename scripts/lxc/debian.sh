@@ -89,6 +89,16 @@ debug_var SWAP
 ROOTFS_SIZE=$(getRootfsSize "16")
 debug_var ROOTFS_SIZE
 
+# Step 8: Get Network Bridge
+BRIDGE=$(getNetworkBridge "vmbr0")
+debug_var BRIDGE
+
+# Step 9: Get VLAN (default derived from ID: digits before last 3)
+VLAN_DEFAULT=$((PVE_ID / 1000))
+[[ "$VLAN_DEFAULT" -eq 0 ]] && VLAN_DEFAULT=1
+VLAN=$(getVlanTag "$VLAN_DEFAULT")
+debug_var VLAN
+
 # TODO: Implement remaining container creation steps
 
 exit 0

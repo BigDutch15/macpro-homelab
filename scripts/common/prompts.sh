@@ -130,13 +130,39 @@ getRootfsSize() {
     echo "$result"
 }
 
-# Get Network Bridge
+# Get Network Bridge (selector from available bridges)
 # Usage: VAR_BRIDGE=$(getNetworkBridge "vmbr0")
 getNetworkBridge() {
     local default="${1:-vmbr0}"
     ensureWhiptail
+    
+    # Get available bridges and build menu items
+    local bridges menu_items=()
+    bridges=$(getAvailableBridges)
+    
+    if [[ -z "$bridges" ]]; then
+        # Fallback to input if no bridges found
+        local result
+        result=$(whiptail --title "$PROMPT_TITLE" --inputbox "Network Bridge:" 8 60 "$default" 3>&1 1>&2 2>&3) || exit 1
+        echo "$result"
+        return
+    fi
+    
+    # Build menu items array
+    local first_bridge=""
+    while IFS= read -r bridge; do
+        [[ -z "$first_bridge" ]] && first_bridge="$bridge"
+        menu_items+=("$bridge" "")
+    done <<< "$bridges"
+    
+    # Use default if it exists in list, otherwise use first bridge
+    [[ ! " $bridges " =~ " $default " ]] && default="$first_bridge"
+    
     local result
-    result=$(whiptail --title "$PROMPT_TITLE" --inputbox "Network Bridge:" 8 60 "$default" 3>&1 1>&2 2>&3) || exit 1
+    result=$(whiptail --title "$PROMPT_TITLE" --menu "Select Network Bridge:" 15 60 6 \
+        "${menu_items[@]}" \
+        --default-item "$default" \
+        3>&1 1>&2 2>&3) || exit 1
     echo "$result"
 }
 
