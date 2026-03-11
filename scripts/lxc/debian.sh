@@ -10,20 +10,27 @@ REPO_BRANCH="${REPO_BRANCH:-main}"
 REPO_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}/scripts"
 
 # Source common scripts (supports both local and remote execution)
-if [[ -f "$(dirname "${BASH_SOURCE[0]}")/../common/debug.sh" ]]; then
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+
+if [[ -n "$SCRIPT_DIR" && -f "$SCRIPT_DIR/../common/debug.sh" ]]; then
     # Local execution
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     COMMON_DIR="$SCRIPT_DIR/../common"
     source "$COMMON_DIR/debug.sh"
     source "$COMMON_DIR/config.sh"
     source "$COMMON_DIR/prompts.sh"
     source "$COMMON_DIR/functions.sh"
 else
-    # Remote execution
-    source <(curl -fsSL "$REPO_URL/common/debug.sh")
-    source <(curl -fsSL "$REPO_URL/common/config.sh")
-    source <(curl -fsSL "$REPO_URL/common/prompts.sh")
-    source <(curl -fsSL "$REPO_URL/common/functions.sh")
+    # Remote execution - source each file with error handling
+    for script in debug.sh config.sh prompts.sh functions.sh; do
+        CONTENT=$(curl -fsSL "$REPO_URL/common/$script" 2>&1)
+        if [[ $? -eq 0 && -n "$CONTENT" ]]; then
+            source <(echo "$CONTENT")
+        else
+            echo "[ERROR] Failed to load $script from $REPO_URL/common/$script" >&2
+            echo "[ERROR] Response: $CONTENT" >&2
+            exit 1
+        fi
+    done
 fi
 
 # =============================================================================
