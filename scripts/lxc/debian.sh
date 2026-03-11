@@ -44,7 +44,17 @@ debug_var REPO_URL
 
 info "Debian LXC Container Creation Script Initiated"
 
-# TODO: Implement container creation steps
+# Step 1: Ensure template is available
+step "Checking Debian 13 template..."
+TEMPLATE=$(ensureTemplate "debian" "13")
+if [[ -z "$TEMPLATE" ]]; then
+    error "Failed to get template"
+    exit 1
+fi
+debug_var TEMPLATE
+success "Template ready: $TEMPLATE"
+
+# TODO: Implement remaining container creation steps
 
 exit 0
 

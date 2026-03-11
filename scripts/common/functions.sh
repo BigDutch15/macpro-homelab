@@ -18,24 +18,65 @@ idExists() {
     pct status $id &>/dev/null || qm status $id &>/dev/null
 }
 
-# Download OS template if needed
-downloadTemplate() {
+# Check if template exists locally
+# Usage: templateExists "debian-13-standard_13.0-1_amd64.tar.zst"
+# Returns: 0 if exists, 1 if not
+templateExists() {
+    local template=$1
+    pveam list local 2>/dev/null | grep -q "$template"
+}
+
+# Get template name for OS/version
+# Usage: getTemplateName "debian" "13"
+# Returns: template filename or empty if not found
+getTemplateName() {
     local os=$1
     local version=$2
     
-    pveam update
+    # Update available templates list
+    pveam update >/dev/null 2>&1
     
+    # Find matching template
+    pveam available --section system | grep -i "${os}-${version}" | awk '{print $2}' | head -1
+}
+
+# Ensure template is available (download if needed)
+# Usage: ensureTemplate "debian" "13"
+# Returns: template filename, exits on failure
+ensureTemplate() {
+    local os=$1
+    local version=$2
+    
+    debug "Checking template for ${os}-${version}"
+    
+    # Get template name
     local template
-    template=$(pveam available --section system | grep -i "${os}-${version}" | awk '{print $2}')
+    template=$(getTemplateName "$os" "$version")
     
-    if [ -z "$template" ]; then
-        echo "ERROR: Could not find template for ${os}-${version}"
+    if [[ -z "$template" ]]; then
+        error "Could not find template for ${os}-${version}"
         return 1
     fi
     
-    echo "Using template: $template"
-    pveam download local "$template"
-    echo "$template"
+    debug "Template name: $template"
+    
+    # Check if already downloaded
+    if templateExists "$template"; then
+        debug "Template already exists locally"
+        echo "$template"
+        return 0
+    fi
+    
+    # Download template
+    info "Downloading template: $template"
+    if pveam download local "$template"; then
+        success "Template downloaded"
+        echo "$template"
+        return 0
+    else
+        error "Failed to download template"
+        return 1
+    fi
 }
 
 # Build network configuration string for LXC
