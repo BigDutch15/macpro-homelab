@@ -2,11 +2,7 @@
 
 # PVE Shared Functions
 # Source this file for common utility functions
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Source config defaults
-source "$SCRIPT_DIR/config.sh"
+# NOTE: config.sh must be sourced BEFORE this file
 
 # Check if running on Proxmox
 checkProxmox() {
