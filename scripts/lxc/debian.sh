@@ -119,6 +119,7 @@ if [[ "$IP_MODE" == "static" ]]; then
 else
     IP_ADDRESS="dhcp"
     GATEWAY=""
+    debug_var GATEWAY
     
     # Prompt for MAC address (optional)
     MAC_ADDRESS=$(getMacAddress)
