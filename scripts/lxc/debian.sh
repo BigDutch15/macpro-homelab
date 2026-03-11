@@ -68,6 +68,27 @@ if idExists "$PVE_ID"; then
 fi
 success "PVE ID: $PVE_ID"
 
+# Step 3: Get Hostname
+HOSTNAME=$(getHostname "lxc-debian")
+debug_var HOSTNAME
+
+# Step 4: Get CPU Cores
+CPU_CORES=$(getCpuCores "2")
+debug_var CPU_CORES
+
+# Step 5: Get Memory
+MEMORY=$(getMemory "2048")
+debug_var MEMORY
+
+# Step 6: Get Swap (default to 50% of memory)
+SWAP_DEFAULT=$((MEMORY / 2))
+SWAP=$(getSwap "$SWAP_DEFAULT")
+debug_var SWAP
+
+# Step 7: Get Root Filesystem Size
+ROOTFS_SIZE=$(getRootfsSize "16")
+debug_var ROOTFS_SIZE
+
 # TODO: Implement remaining container creation steps
 
 exit 0
