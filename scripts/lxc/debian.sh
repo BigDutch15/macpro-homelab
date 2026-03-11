@@ -10,19 +10,35 @@ REPO_BRANCH="${REPO_BRANCH:-main}"
 REPO_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}/scripts"
 
 # Source common scripts (supports both local and remote execution)
-if [[ -f "$(dirname "${BASH_SOURCE[0]}")/../common/config.sh" ]]; then
+if [[ -f "$(dirname "${BASH_SOURCE[0]}")/../common/debug.sh" ]]; then
     # Local execution
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     COMMON_DIR="$SCRIPT_DIR/../common"
+    source "$COMMON_DIR/debug.sh"
     source "$COMMON_DIR/config.sh"
     source "$COMMON_DIR/prompts.sh"
     source "$COMMON_DIR/functions.sh"
 else
     # Remote execution
+    source <(curl -fsSL "$REPO_URL/common/debug.sh")
     source <(curl -fsSL "$REPO_URL/common/config.sh")
     source <(curl -fsSL "$REPO_URL/common/prompts.sh")
     source <(curl -fsSL "$REPO_URL/common/functions.sh")
 fi
+
+# =============================================================================
+# Debian LXC Container Creation
+# =============================================================================
+info "Debian LXC Container Creation Script Initiated"
+
+# TODO: Implement container creation steps
+
+exit 0
+
+# =============================================================================
+# COMMENTED OUT - Original Implementation
+# =============================================================================
+: <<'COMMENTED'
 
 # Set defaults for Debian LXC
 VAR_PVE_ID="$DEFAULT_PVE_ID"
@@ -224,3 +240,4 @@ fi
 
 echo ""
 echo "Debian LXC container $VAR_PVE_ID setup complete!"
+COMMENTED

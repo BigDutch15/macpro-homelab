@@ -125,9 +125,17 @@ show_main_menu() {
     
     case $choice in
         1)
-            info "Selected: Debian 13 LXC"
-            debug "Would run lxc/debian.sh here"
-            # TODO: source and run debian.sh
+            info "Selected: Debian LXC"
+            debug "Running lxc/debian.sh"
+            
+            # Export repo variables for debian.sh
+            export REPO_OWNER REPO_NAME REPO_BRANCH DEBUG
+            
+            if [[ -f "$(dirname "${BASH_SOURCE[0]}")/lxc/debian.sh" ]]; then
+                bash "$(dirname "${BASH_SOURCE[0]}")/lxc/debian.sh"
+            else
+                bash <(curl -fsSL "$REPO_URL/lxc/debian.sh")
+            fi
             ;;
         2|"")
             info "Exiting"
