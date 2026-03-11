@@ -99,6 +99,20 @@ VLAN_DEFAULT=$((PVE_ID / 1000))
 VLAN=$(getVlanTag "$VLAN_DEFAULT")
 debug_var VLAN
 
+# Step 10: Get IP Configuration
+IP_MODE=$(getIpMode)
+debug_var IP_MODE
+
+if [[ "$IP_MODE" == "static" ]]; then
+    # Derive default IP from host IP, VLAN, and container ID
+    DEFAULT_IP=$(deriveDefaultIp "$VLAN" "$PVE_ID")
+    debug_var DEFAULT_IP
+    IP_ADDRESS=$(getStaticIp "${DEFAULT_IP}/24")
+    debug_var IP_ADDRESS
+else
+    IP_ADDRESS="dhcp"
+fi
+
 # TODO: Implement remaining container creation steps
 
 exit 0

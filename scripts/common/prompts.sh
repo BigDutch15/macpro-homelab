@@ -191,11 +191,12 @@ getIpMode() {
 }
 
 # Get Static IP Address
-# Usage: VAR_IP=$(getStaticIp)
+# Usage: VAR_IP=$(getStaticIp "default_ip")
 getStaticIp() {
+    local default="${1:-}"
     ensureWhiptail
     local result
-    result=$(whiptail --title "$PROMPT_TITLE" --inputbox "Static IP Address (CIDR format, e.g. 192.168.1.100/24):" 8 70 "" 3>&1 1>&2 2>&3) || exit 1
+    result=$(whiptail --title "$PROMPT_TITLE" --inputbox "Static IP Address (CIDR format, e.g. 192.168.1.100/24):" 8 70 "$default" 3>&1 1>&2 2>&3) || exit 1
     echo "$result"
 }
 

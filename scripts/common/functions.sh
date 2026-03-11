@@ -19,6 +19,44 @@ getAvailableBridges() {
     ip -o link show type bridge 2>/dev/null | awk -F': ' '{print $2}' | grep '^vmbr' | sort
 }
 
+# Get host IP address (first non-loopback IPv4)
+# Usage: getHostIp
+# Returns: IP address or empty
+getHostIp() {
+    hostname -I 2>/dev/null | awk '{print $1}'
+}
+
+# Derive default IP from host IP, VLAN, and container ID
+# Usage: deriveDefaultIp <vlan> <container_id>
+# Returns: derived IP address
+deriveDefaultIp() {
+    local vlan=$1
+    local id=$2
+    
+    # Get host IP and extract first two octets
+    local host_ip=$(getHostIp)
+    if [[ -z "$host_ip" ]]; then
+        echo "10.0.${vlan}.10"
+        return
+    fi
+    
+    local octet1=$(echo "$host_ip" | cut -d. -f1)
+    local octet2=$(echo "$host_ip" | cut -d. -f2)
+    
+    # Third octet = VLAN
+    local octet3=$vlan
+    
+    # Fourth octet = last 3 digits of ID (or ID if <= 3 digits)
+    local octet4=$((id % 1000))
+    
+    # If octet4 is 0 or > 253, default to 10
+    if [[ "$octet4" -eq 0 || "$octet4" -gt 253 ]]; then
+        octet4=10
+    fi
+    
+    echo "${octet1}.${octet2}.${octet3}.${octet4}"
+}
+
 # Check if container/VM ID exists
 idExists() {
     local id=$1
