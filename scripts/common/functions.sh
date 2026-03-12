@@ -169,7 +169,7 @@ ensureTemplate() {
     # Check if already downloaded
     if templateExists "$template"; then
         debug "Template already exists locally"
-        echo "$template"
+        echo "local:vztmpl/$template"
         return 0
     fi
     
@@ -177,7 +177,7 @@ ensureTemplate() {
     info "Downloading template: $template"
     if pveam download local "$template"; then
         success "Template downloaded"
-        echo "$template"
+        echo "local:vztmpl/$template"
         return 0
     else
         error "Failed to download template"
