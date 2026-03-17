@@ -186,20 +186,35 @@ EOF'
 
 install_nvidia_drivers() {
     local container_id=$1
+    local nvidia_driver_version="580.126.09"
+    local nvidia_driver_url="https://us.download.nvidia.com/XFree86/Linux-x86_64/${nvidia_driver_version}/NVIDIA-Linux-x86_64-${nvidia_driver_version}.run"
+    local nvidia_driver_file="NVIDIA-Linux-x86_64-${nvidia_driver_version}.run"
     
     echo "Installing NVIDIA drivers in container $container_id..."
     
-    # Add non-free and contrib repositories for NVIDIA drivers
-    echo "Adding non-free repositories..."
-    pct exec $container_id -- bash -c "sed -i 's/main/main contrib non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list"
+    # Blacklist nouveau driver
+    echo "Blacklisting nouveau driver..."
+    pct exec $container_id -- bash -c "echo 'blacklist nouveau' > /etc/modprobe.d/blacklist-nouveau.conf"
+    pct exec $container_id -- bash -c "echo 'options nouveau modeset=0' >> /etc/modprobe.d/blacklist-nouveau.conf"
+    pct exec $container_id -- bash -c "update-initramfs -u 2>/dev/null || true"
     
-    # Update package list
-    echo "Updating package list..."
-    pct exec $container_id -- bash -c "apt-get update"
+    # Install build tools required for driver compilation
+    echo "Installing build tools..."
+    pct exec $container_id -- bash -c "apt-get update && apt-get install -y build-essential pkg-config libglvnd-dev wget"
     
-    # Install NVIDIA driver packages (headless for servers)
-    echo "Installing NVIDIA driver packages..."
-    pct exec $container_id -- bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y nvidia-driver nvidia-smi"
+    # Download NVIDIA driver
+    echo "Downloading NVIDIA driver ${nvidia_driver_version}..."
+    pct exec $container_id -- bash -c "cd /tmp && wget -q ${nvidia_driver_url}"
+    
+    # Make installer executable
+    pct exec $container_id -- bash -c "chmod +x /tmp/${nvidia_driver_file}"
+    
+    # Run the NVIDIA installer in silent mode (no kernel module for LXC - uses host kernel)
+    echo "Installing NVIDIA driver (this may take a few minutes)..."
+    pct exec $container_id -- bash -c "/tmp/${nvidia_driver_file} --silent --no-kernel-module --no-nouveau-check"
+    
+    # Clean up installer
+    pct exec $container_id -- bash -c "rm -f /tmp/${nvidia_driver_file}"
     
     # Verify installation
     echo "Verifying NVIDIA driver installation..."
