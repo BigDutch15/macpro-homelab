@@ -120,11 +120,12 @@ show_main_menu() {
     # Define menu items
     local menu_items=(
         "1" "LXC - Debian"
-        "2" "Exit"
+        "2" "LXC - Docker"
+        "3" "Exit"
     )
     
     local choice
-    choice=$(whiptail --title "PVE Entity Creation" --menu "Select entity to create:" 12 60 3 \
+    choice=$(whiptail --title "PVE Entity Creation" --menu "Select entity to create:" 14 60 4 \
         "${menu_items[@]}" \
         3>&1 1>&2 2>&3)
     
@@ -150,7 +151,19 @@ show_main_menu() {
                     bash <(curl -fsSL "$REPO_URL/lxc/debian.sh")
             fi
             ;;
-        2|"")
+        2)
+            info "Selected: $choice_label"
+            debug "Running lxc/docker.sh"
+            
+            if [[ -f "$(dirname "${BASH_SOURCE[0]}")/lxc/docker.sh" ]]; then
+                REPO_OWNER="$REPO_OWNER" REPO_NAME="$REPO_NAME" REPO_BRANCH="$REPO_BRANCH" DEBUG="$DEBUG" \
+                    bash "$(dirname "${BASH_SOURCE[0]}")/lxc/docker.sh"
+            else
+                REPO_OWNER="$REPO_OWNER" REPO_NAME="$REPO_NAME" REPO_BRANCH="$REPO_BRANCH" DEBUG="$DEBUG" \
+                    bash <(curl -fsSL "$REPO_URL/lxc/docker.sh")
+            fi
+            ;;
+        3|"")
             info "Exiting"
             exit 0
             ;;
