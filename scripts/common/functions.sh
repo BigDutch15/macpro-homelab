@@ -369,6 +369,41 @@ configureGpuPassthrough() {
                 fi
             done
         fi
+        
+        # Bind mount NVIDIA driver libraries from host
+        echo "  Configuring NVIDIA driver library mounts..."
+        
+        # Find and mount nvidia libraries - check common locations
+        local nvidia_lib_dirs=("/usr/lib/x86_64-linux-gnu" "/usr/lib64" "/usr/lib")
+        for lib_dir in "${nvidia_lib_dirs[@]}"; do
+            if ls ${lib_dir}/libnvidia-*.so* 2>/dev/null | head -1 > /dev/null; then
+                # Mount individual nvidia libraries
+                for lib in ${lib_dir}/libnvidia-*.so*; do
+                    if [ -f "$lib" ] && [ ! -L "$lib" ]; then
+                        local lib_name=$(basename "$lib")
+                        local mount_line="lxc.mount.entry: $lib ${lib_dir#/}/$lib_name none bind,optional,create=file,ro"
+                        grep -qxF "$mount_line" "$conf_file" || echo "$mount_line" >> "$conf_file"
+                    fi
+                done
+                # Also mount libcuda
+                for lib in ${lib_dir}/libcuda*.so*; do
+                    if [ -f "$lib" ] && [ ! -L "$lib" ]; then
+                        local lib_name=$(basename "$lib")
+                        local mount_line="lxc.mount.entry: $lib ${lib_dir#/}/$lib_name none bind,optional,create=file,ro"
+                        grep -qxF "$mount_line" "$conf_file" || echo "$mount_line" >> "$conf_file"
+                    fi
+                done
+                echo "  Configured NVIDIA libraries from $lib_dir"
+                break
+            fi
+        done
+        
+        # Mount nvidia-smi and other binaries if available
+        if [ -f /usr/bin/nvidia-smi ]; then
+            local mount_line="lxc.mount.entry: /usr/bin/nvidia-smi usr/bin/nvidia-smi none bind,optional,create=file,ro"
+            grep -qxF "$mount_line" "$conf_file" || echo "$mount_line" >> "$conf_file"
+            echo "  Configured: /usr/bin/nvidia-smi"
+        fi
     fi
     
     # Check for DRI devices (Intel/AMD GPUs)

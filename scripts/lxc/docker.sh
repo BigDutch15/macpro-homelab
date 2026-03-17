@@ -128,9 +128,12 @@ install_docker() {
     
     echo "Installing Docker Engine in container $container_id..."
     
+    # Update and upgrade all packages first
+    echo "Updating and upgrading all packages..."
+    pct exec $container_id -- bash -c "apt update && apt upgrade -y"
+    
     # Install prerequisites
     echo "Installing prerequisites..."
-    pct exec $container_id -- bash -c "apt update"
     pct exec $container_id -- bash -c "apt install -y ca-certificates curl"
     
     # Add Docker's official GPG key
