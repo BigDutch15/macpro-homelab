@@ -1,16 +1,22 @@
 #!/bin/bash
 
 # Docker LXC Container Setup
-# This script creates a Debian LXC container using debian-lxc.sh and installs Docker
+# This script creates a Debian LXC container using debian.sh and installs Docker
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Build REPO_URL if not passed from pve.sh
+REPO_OWNER="${REPO_OWNER:-BigDutch15}"
+REPO_NAME="${REPO_NAME:-macpro-homelab}"
+REPO_BRANCH="${REPO_BRANCH:-main}"
+REPO_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}/scripts"
 
 show_usage() {
     cat << EOF
 Usage: $0 [OPTIONS]
 
 This script creates a Debian LXC container with Docker installed.
-It uses debian-lxc.sh for base container creation.
+It uses debian.sh for base container creation.
 
 OPTIONS:
     --silent                    Run in silent mode (no interactive prompts)
@@ -76,17 +82,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Check if debian-lxc.sh exists
-if [ ! -f "$SCRIPT_DIR/debian-lxc.sh" ]; then
-    echo "ERROR: debian-lxc.sh not found in $SCRIPT_DIR"
-    exit 1
-fi
-
-# Run debian-lxc.sh with all original arguments (override hostname for docker naming)
+# Run debian.sh to create base container (local or remote)
 echo "Creating base Debian LXC container..."
-if ! bash "$SCRIPT_DIR/debian-lxc.sh" "${ARGS[@]}"; then
-    echo "ERROR: Failed to create base container"
-    exit 1
+if [[ -f "$SCRIPT_DIR/debian.sh" ]]; then
+    if ! bash "$SCRIPT_DIR/debian.sh" "${ARGS[@]}"; then
+        echo "ERROR: Failed to create base container"
+        exit 1
+    fi
+else
+    if ! bash <(curl -fsSL "$REPO_URL/lxc/debian.sh") "${ARGS[@]}"; then
+        echo "ERROR: Failed to create base container"
+        exit 1
+    fi
 fi
 
 echo ""
