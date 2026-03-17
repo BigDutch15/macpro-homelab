@@ -289,4 +289,7 @@ info ""
 info "You can access the container with:"
 info "  pct enter $PVE_ID"
 
+# Output container ID for parent scripts to capture
+echo "CREATED_PVE_ID=$PVE_ID"
+
 exit 0

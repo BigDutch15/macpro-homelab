@@ -85,15 +85,23 @@ done
 # Run debian.sh to create base container (local or remote)
 echo "Creating base Debian LXC container..."
 if [[ -f "$SCRIPT_DIR/debian.sh" ]]; then
-    if ! bash "$SCRIPT_DIR/debian.sh" "${ARGS[@]}"; then
-        echo "ERROR: Failed to create base container"
-        exit 1
-    fi
+    DEBIAN_OUTPUT=$(bash "$SCRIPT_DIR/debian.sh" "${ARGS[@]}" | tee /dev/stderr)
+    DEBIAN_EXIT=${PIPESTATUS[0]}
 else
-    if ! bash <(curl -fsSL "$REPO_URL/lxc/debian.sh") "${ARGS[@]}"; then
-        echo "ERROR: Failed to create base container"
-        exit 1
-    fi
+    DEBIAN_OUTPUT=$(bash <(curl -fsSL "$REPO_URL/lxc/debian.sh") "${ARGS[@]}" | tee /dev/stderr)
+    DEBIAN_EXIT=${PIPESTATUS[0]}
+fi
+
+if [[ $DEBIAN_EXIT -ne 0 ]]; then
+    echo "ERROR: Failed to create base container"
+    exit 1
+fi
+
+# Extract the actual container ID from debian.sh output
+CREATED_ID=$(echo "$DEBIAN_OUTPUT" | grep "^CREATED_PVE_ID=" | cut -d= -f2)
+if [[ -n "$CREATED_ID" ]]; then
+    VAR_PVE_ID="$CREATED_ID"
+    echo "Using container ID: $VAR_PVE_ID"
 fi
 
 echo ""
