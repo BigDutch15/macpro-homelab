@@ -316,6 +316,38 @@ configureGpuPassthrough() {
     
     echo "Configuring GPU passthrough for container $container_id..."
     
+    # Helper function to add device passthrough
+    add_device_passthrough() {
+        local dev=$1
+        local mount_path=$2
+        
+        # Only process character or block devices
+        if [ ! -c "$dev" ] && [ ! -b "$dev" ]; then
+            echo "  Skipping $dev (not a device file)"
+            return
+        fi
+        
+        # Get device type (c=char, b=block)
+        local dev_type
+        [ -c "$dev" ] && dev_type="c" || dev_type="b"
+        
+        # Get major:minor using stat
+        local major minor
+        major=$(stat -c '%t' "$dev" 2>/dev/null)
+        minor=$(stat -c '%T' "$dev" 2>/dev/null)
+        
+        # Convert hex to decimal
+        major=$((16#$major))
+        minor=$((16#$minor))
+        
+        local device_line="lxc.cgroup2.devices.allow: $dev_type $major:$minor rwm"
+        local mount_line="lxc.mount.entry: $dev $mount_path none bind,create=file,optional 0 0"
+        
+        grep -qxF "$device_line" "$conf_file" || echo "$device_line" >> "$conf_file"
+        grep -qxF "$mount_line" "$conf_file" || echo "$mount_line" >> "$conf_file"
+        echo "  Configured: $dev ($dev_type $major:$minor)"
+    }
+    
     # Check for NVIDIA GPUs
     local nvidia_found=0
     if lspci | grep -i nvidia > /dev/null 2>&1; then
@@ -324,16 +356,7 @@ configureGpuPassthrough() {
         
         # Add NVIDIA device access
         for dev in /dev/nvidia*; do
-            if [ -e "$dev" ]; then
-                local dev_type=$(ls -l "$dev" | awk '{print substr($1,1,1)}')
-                local dev_maj_min=$(ls -l "$dev" | awk '{gsub(/,/, ""); print $5":"$6}')
-                local device_line="lxc.cgroup2.devices.allow: $dev_type $dev_maj_min rwm"
-                local mount_line="lxc.mount.entry: $dev dev/$(basename $dev) none bind,create=file,optional 0 0"
-                
-                grep -qxF "$device_line" "$conf_file" || echo "$device_line" >> "$conf_file"
-                grep -qxF "$mount_line" "$conf_file" || echo "$mount_line" >> "$conf_file"
-                echo "  Configured: $dev"
-            fi
+            [ -e "$dev" ] && add_device_passthrough "$dev" "dev/$(basename $dev)"
         done
     fi
     
@@ -342,16 +365,7 @@ configureGpuPassthrough() {
         echo "DRI devices detected"
         
         for dev in /dev/dri/*; do
-            if [ -e "$dev" ]; then
-                local dev_type=$(ls -l "$dev" | awk '{print substr($1,1,1)}')
-                local dev_maj_min=$(ls -l "$dev" | awk '{gsub(/,/, ""); print $5":"$6}')
-                local device_line="lxc.cgroup2.devices.allow: $dev_type $dev_maj_min rwm"
-                local mount_line="lxc.mount.entry: $dev dev/dri/$(basename $dev) none bind,create=file,optional 0 0"
-                
-                grep -qxF "$device_line" "$conf_file" || echo "$device_line" >> "$conf_file"
-                grep -qxF "$mount_line" "$conf_file" || echo "$mount_line" >> "$conf_file"
-                echo "  Configured: $dev"
-            fi
+            [ -e "$dev" ] && add_device_passthrough "$dev" "dev/dri/$(basename $dev)"
         done
     fi
     
