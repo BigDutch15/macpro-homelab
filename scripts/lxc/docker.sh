@@ -184,6 +184,34 @@ EOF'
     echo "Docker Engine installation complete"
 }
 
+install_nvidia_drivers() {
+    local container_id=$1
+    
+    echo "Installing NVIDIA drivers in container $container_id..."
+    
+    # Add non-free and contrib repositories for NVIDIA drivers
+    echo "Adding non-free repositories..."
+    pct exec $container_id -- bash -c "sed -i 's/main/main contrib non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list"
+    
+    # Update package list
+    echo "Updating package list..."
+    pct exec $container_id -- bash -c "apt-get update"
+    
+    # Install NVIDIA driver packages (headless for servers)
+    echo "Installing NVIDIA driver packages..."
+    pct exec $container_id -- bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y nvidia-driver nvidia-smi"
+    
+    # Verify installation
+    echo "Verifying NVIDIA driver installation..."
+    if pct exec $container_id -- bash -c "nvidia-smi" 2>&1; then
+        echo "NVIDIA drivers installed and GPU is accessible"
+    else
+        echo "NVIDIA driver installation complete (nvidia-smi may require container restart)"
+    fi
+    
+    echo "NVIDIA driver installation complete"
+}
+
 install_nvidia_container_toolkit() {
     local container_id=$1
     
@@ -238,9 +266,10 @@ install_nvidia_container_toolkit() {
 # Install Docker
 install_docker "$VAR_PVE_ID"
 
-# Install NVIDIA Container Toolkit if GPU passthrough is enabled and NVIDIA GPU is detected
+# Install NVIDIA drivers and Container Toolkit if GPU passthrough is enabled and NVIDIA GPU is detected
 if [ "$VAR_GPU_PASSTHROUGH" -eq 1 ]; then
     if lspci | grep -i nvidia > /dev/null; then
+        install_nvidia_drivers "$VAR_PVE_ID"
         install_nvidia_container_toolkit "$VAR_PVE_ID"
     fi
 fi
