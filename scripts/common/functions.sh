@@ -323,8 +323,7 @@ configureGpuPassthrough() {
         
         # Only process character or block devices
         if [ ! -c "$dev" ] && [ ! -b "$dev" ]; then
-            echo "  Skipping $dev (not a device file)"
-            return
+            return 1
         fi
         
         # Get device type (c=char, b=block)
@@ -341,11 +340,12 @@ configureGpuPassthrough() {
         minor=$((16#$minor))
         
         local device_line="lxc.cgroup2.devices.allow: $dev_type $major:$minor rwm"
-        local mount_line="lxc.mount.entry: $dev $mount_path none bind,create=file,optional 0 0"
+        local mount_line="lxc.mount.entry: $dev $mount_path none bind,optional,create=file"
         
         grep -qxF "$device_line" "$conf_file" || echo "$device_line" >> "$conf_file"
         grep -qxF "$mount_line" "$conf_file" || echo "$mount_line" >> "$conf_file"
         echo "  Configured: $dev ($dev_type $major:$minor)"
+        return 0
     }
     
     # Check for NVIDIA GPUs
@@ -354,16 +354,33 @@ configureGpuPassthrough() {
         nvidia_found=1
         echo "NVIDIA GPU detected"
         
-        # Add NVIDIA device access
-        for dev in /dev/nvidia*; do
-            [ -e "$dev" ] && add_device_passthrough "$dev" "dev/$(basename $dev)"
+        # Add NVIDIA device access for common devices
+        for dev in /dev/nvidia0 /dev/nvidiactl /dev/nvidia-uvm /dev/nvidia-uvm-tools; do
+            if [ -e "$dev" ]; then
+                add_device_passthrough "$dev" "dev/$(basename $dev)"
+            fi
         done
+        
+        # Add nvidia-caps devices if they exist
+        if [ -d /dev/nvidia-caps ]; then
+            for dev in /dev/nvidia-caps/*; do
+                if [ -e "$dev" ]; then
+                    add_device_passthrough "$dev" "dev/nvidia-caps/$(basename $dev)"
+                fi
+            done
+        fi
     fi
     
     # Check for DRI devices (Intel/AMD GPUs)
     if [ -d /dev/dri ]; then
         echo "DRI devices detected"
         
+        # Add /dev/dri as directory mount first
+        local dri_dir_line="lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir"
+        grep -qxF "$dri_dir_line" "$conf_file" || echo "$dri_dir_line" >> "$conf_file"
+        echo "  Configured: /dev/dri (directory)"
+        
+        # Add individual DRI device entries
         for dev in /dev/dri/*; do
             [ -e "$dev" ] && add_device_passthrough "$dev" "dev/dri/$(basename $dev)"
         done
