@@ -140,7 +140,21 @@ else
     debug_var MAC_ADDRESS
 fi
 
-# Step 14: Confirm configuration
+# Step 14: Get Optical Drive Passthrough option
+step "Optical drive passthrough selection..."
+if whiptail --title "$PROMPT_TITLE" --yesno "Enable optical drive passthrough?\n\nThis will pass through CD/DVD drives to the container.\nRequires a privileged container." 12 60; then
+    OPTICAL_PASSTHROUGH=1
+    # Force privileged if optical passthrough is enabled
+    if [[ "$UNPRIVILEGED" -eq 1 ]]; then
+        warn "Optical passthrough requires privileged container - switching to privileged"
+        UNPRIVILEGED=0
+    fi
+else
+    OPTICAL_PASSTHROUGH=0
+fi
+debug_var OPTICAL_PASSTHROUGH
+
+# Step 15: Confirm configuration
 step "Review Configuration"
 CONFIRM_MSG="Please review the container configuration:
 
@@ -156,7 +170,8 @@ Storage: $STORAGE
 Root FS: ${ROOTFS_SIZE}GB
 Bridge: $BRIDGE
 VLAN: $VLAN
-IP: $IP_ADDRESS"
+IP: $IP_ADDRESS
+Optical Passthrough: $([ "$OPTICAL_PASSTHROUGH" -eq 1 ] && echo "Yes" || echo "No")"
 
 if [[ "$IP_MODE" == "static" ]]; then
     CONFIRM_MSG="$CONFIRM_MSG
@@ -178,7 +193,7 @@ if ! whiptail --title "Confirm Configuration" --yesno "$CONFIRM_MSG" 20 70; then
 fi
 success "Configuration confirmed"
 
-# Step 15: Build and display container creation command
+# Step 16: Build and display container creation command
 step "Building container creation command..."
 
 # Build the pct create command
@@ -233,7 +248,7 @@ echo "[DEBUG]   --password <REDACTED> \\" >&2
 echo "[DEBUG]   --start 0" >&2
 echo "" >&2
 
-# Step 16: Execute container creation
+# Step 17: Execute container creation
 step "Creating container..."
 info "Executing: pct create $PVE_ID..."
 
@@ -245,7 +260,15 @@ else
     exit 1
 fi
 
-# Step 17: Start the container
+# Step 18: Configure optical drive passthrough (before starting)
+if [[ "$OPTICAL_PASSTHROUGH" -eq 1 ]]; then
+    step "Configuring optical drive passthrough..."
+    configureSecuritySettings "$PVE_ID"
+    configureOpticalPassthrough "$PVE_ID"
+    success "Optical drive passthrough configured"
+fi
+
+# Step 19: Start the container
 step "Starting container..."
 if pct start "$PVE_ID"; then
     success "Container $PVE_ID started successfully"
@@ -254,7 +277,7 @@ else
     exit 1
 fi
 
-# Step 18: Display completion message
+# Step 20: Display completion message
 success "Container creation complete!"
 info "Container ID: $PVE_ID"
 info "Hostname: $HOSTNAME"
