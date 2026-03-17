@@ -84,12 +84,16 @@ done
 
 # Run debian.sh to create base container (local or remote)
 # Set SKIP_START=1 so debian.sh doesn't start the container - we'll start it after Docker setup
+# Use a temp file to capture output while preserving colors to terminal
+DEBIAN_TEMP=$(mktemp)
+trap "rm -f $DEBIAN_TEMP" EXIT
+
 echo "Creating base Debian LXC container..."
 if [[ -f "$SCRIPT_DIR/debian.sh" ]]; then
-    DEBIAN_OUTPUT=$(SKIP_START=1 bash "$SCRIPT_DIR/debian.sh" "${ARGS[@]}" | tee /dev/stderr)
+    SKIP_START=1 bash "$SCRIPT_DIR/debian.sh" "${ARGS[@]}" | tee "$DEBIAN_TEMP"
     DEBIAN_EXIT=${PIPESTATUS[0]}
 else
-    DEBIAN_OUTPUT=$(SKIP_START=1 bash <(curl -fsSL "$REPO_URL/lxc/debian.sh") "${ARGS[@]}" | tee /dev/stderr)
+    SKIP_START=1 bash <(curl -fsSL "$REPO_URL/lxc/debian.sh") "${ARGS[@]}" | tee "$DEBIAN_TEMP"
     DEBIAN_EXIT=${PIPESTATUS[0]}
 fi
 
@@ -99,7 +103,7 @@ if [[ $DEBIAN_EXIT -ne 0 ]]; then
 fi
 
 # Extract the actual container ID from debian.sh output
-CREATED_ID=$(echo "$DEBIAN_OUTPUT" | grep "^CREATED_PVE_ID=" | cut -d= -f2)
+CREATED_ID=$(grep "^CREATED_PVE_ID=" "$DEBIAN_TEMP" | cut -d= -f2)
 if [[ -n "$CREATED_ID" ]]; then
     VAR_PVE_ID="$CREATED_ID"
     echo "Using container ID: $VAR_PVE_ID"
