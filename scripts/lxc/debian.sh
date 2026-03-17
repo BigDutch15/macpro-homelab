@@ -140,7 +140,21 @@ else
     debug_var MAC_ADDRESS
 fi
 
-# Step 14: Get Optical Drive Passthrough option
+# Step 14: Get GPU Passthrough option
+step "GPU passthrough selection..."
+if whiptail --title "$PROMPT_TITLE" --yesno "Enable GPU passthrough?\n\nThis will pass through GPU devices to the container.\nRequires a privileged container." 12 60; then
+    GPU_PASSTHROUGH=1
+    # Force privileged if GPU passthrough is enabled
+    if [[ "$UNPRIVILEGED" -eq 1 ]]; then
+        warn "GPU passthrough requires privileged container - switching to privileged"
+        UNPRIVILEGED=0
+    fi
+else
+    GPU_PASSTHROUGH=0
+fi
+debug_var GPU_PASSTHROUGH
+
+# Step 15: Get Optical Drive Passthrough option
 step "Optical drive passthrough selection..."
 if whiptail --title "$PROMPT_TITLE" --yesno "Enable optical drive passthrough?\n\nThis will pass through CD/DVD drives to the container.\nRequires a privileged container." 12 60; then
     OPTICAL_PASSTHROUGH=1
@@ -154,7 +168,7 @@ else
 fi
 debug_var OPTICAL_PASSTHROUGH
 
-# Step 15: Confirm configuration
+# Step 16: Confirm configuration
 step "Review Configuration"
 CONFIRM_MSG="Please review the container configuration:
 
@@ -171,6 +185,7 @@ Root FS: ${ROOTFS_SIZE}GB
 Bridge: $BRIDGE
 VLAN: $VLAN
 IP: $IP_ADDRESS
+GPU Passthrough: $([ "$GPU_PASSTHROUGH" -eq 1 ] && echo "Yes" || echo "No")
 Optical Passthrough: $([ "$OPTICAL_PASSTHROUGH" -eq 1 ] && echo "Yes" || echo "No")"
 
 if [[ "$IP_MODE" == "static" ]]; then
@@ -193,7 +208,7 @@ if ! whiptail --title "Confirm Configuration" --yesno "$CONFIRM_MSG" 20 70; then
 fi
 success "Configuration confirmed"
 
-# Step 16: Build and display container creation command
+# Step 17: Build and display container creation command
 step "Building container creation command..."
 
 # Build the pct create command
@@ -248,7 +263,7 @@ echo "[DEBUG]   --password <REDACTED> \\" >&2
 echo "[DEBUG]   --start 0" >&2
 echo "" >&2
 
-# Step 17: Execute container creation
+# Step 18: Execute container creation
 step "Creating container..."
 info "Executing: pct create $PVE_ID..."
 
@@ -260,7 +275,15 @@ else
     exit 1
 fi
 
-# Step 18: Configure optical drive passthrough (before starting)
+# Step 19: Configure GPU passthrough (before starting)
+if [[ "$GPU_PASSTHROUGH" -eq 1 ]]; then
+    step "Configuring GPU passthrough..."
+    configureSecuritySettings "$PVE_ID"
+    configureGpuPassthrough "$PVE_ID"
+    success "GPU passthrough configured"
+fi
+
+# Step 20: Configure optical drive passthrough (before starting)
 if [[ "$OPTICAL_PASSTHROUGH" -eq 1 ]]; then
     step "Configuring optical drive passthrough..."
     configureSecuritySettings "$PVE_ID"
@@ -268,7 +291,7 @@ if [[ "$OPTICAL_PASSTHROUGH" -eq 1 ]]; then
     success "Optical drive passthrough configured"
 fi
 
-# Step 19: Start the container (skip if called from parent script)
+# Step 21: Start the container (skip if called from parent script)
 if [[ "${SKIP_START:-0}" -ne 1 ]]; then
     step "Starting container..."
     if pct start "$PVE_ID"; then
@@ -279,7 +302,7 @@ if [[ "${SKIP_START:-0}" -ne 1 ]]; then
     fi
 fi
 
-# Step 20: Display completion message
+# Step 22: Display completion message
 success "Container creation complete!"
 info "Container ID: $PVE_ID"
 info "Hostname: $HOSTNAME"

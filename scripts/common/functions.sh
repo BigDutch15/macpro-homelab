@@ -309,6 +309,61 @@ configureOpticalPassthrough() {
     echo "Optical drive passthrough configured"
 }
 
+# Configure GPU passthrough
+configureGpuPassthrough() {
+    local container_id=$1
+    local conf_file="/etc/pve/lxc/${container_id}.conf"
+    
+    echo "Configuring GPU passthrough for container $container_id..."
+    
+    # Check for NVIDIA GPUs
+    local nvidia_found=0
+    if lspci | grep -i nvidia > /dev/null 2>&1; then
+        nvidia_found=1
+        echo "NVIDIA GPU detected"
+        
+        # Add NVIDIA device access
+        for dev in /dev/nvidia*; do
+            if [ -e "$dev" ]; then
+                local dev_type=$(ls -l "$dev" | awk '{print substr($1,1,1)}')
+                local dev_maj_min=$(ls -l "$dev" | awk '{gsub(/,/, ""); print $5":"$6}')
+                local device_line="lxc.cgroup2.devices.allow: $dev_type $dev_maj_min rwm"
+                local mount_line="lxc.mount.entry: $dev dev/$(basename $dev) none bind,create=file,optional 0 0"
+                
+                grep -qxF "$device_line" "$conf_file" || echo "$device_line" >> "$conf_file"
+                grep -qxF "$mount_line" "$conf_file" || echo "$mount_line" >> "$conf_file"
+                echo "  Configured: $dev"
+            fi
+        done
+    fi
+    
+    # Check for DRI devices (Intel/AMD GPUs)
+    if [ -d /dev/dri ]; then
+        echo "DRI devices detected"
+        
+        for dev in /dev/dri/*; do
+            if [ -e "$dev" ]; then
+                local dev_type=$(ls -l "$dev" | awk '{print substr($1,1,1)}')
+                local dev_maj_min=$(ls -l "$dev" | awk '{gsub(/,/, ""); print $5":"$6}')
+                local device_line="lxc.cgroup2.devices.allow: $dev_type $dev_maj_min rwm"
+                local mount_line="lxc.mount.entry: $dev dev/dri/$(basename $dev) none bind,create=file,optional 0 0"
+                
+                grep -qxF "$device_line" "$conf_file" || echo "$device_line" >> "$conf_file"
+                grep -qxF "$mount_line" "$conf_file" || echo "$mount_line" >> "$conf_file"
+                echo "  Configured: $dev"
+            fi
+        done
+    fi
+    
+    if [ $nvidia_found -eq 0 ] && [ ! -d /dev/dri ]; then
+        echo "No GPU devices found on host"
+        return 1
+    fi
+    
+    echo "GPU passthrough configured"
+    return 0
+}
+
 # Wait for container to be running
 waitForContainer() {
     local container_id=$1
