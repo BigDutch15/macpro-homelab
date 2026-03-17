@@ -83,12 +83,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Run debian.sh to create base container (local or remote)
+# Set SKIP_START=1 so debian.sh doesn't start the container - we'll start it after Docker setup
 echo "Creating base Debian LXC container..."
 if [[ -f "$SCRIPT_DIR/debian.sh" ]]; then
-    DEBIAN_OUTPUT=$(bash "$SCRIPT_DIR/debian.sh" "${ARGS[@]}" | tee /dev/stderr)
+    DEBIAN_OUTPUT=$(SKIP_START=1 bash "$SCRIPT_DIR/debian.sh" "${ARGS[@]}" | tee /dev/stderr)
     DEBIAN_EXIT=${PIPESTATUS[0]}
 else
-    DEBIAN_OUTPUT=$(bash <(curl -fsSL "$REPO_URL/lxc/debian.sh") "${ARGS[@]}" | tee /dev/stderr)
+    DEBIAN_OUTPUT=$(SKIP_START=1 bash <(curl -fsSL "$REPO_URL/lxc/debian.sh") "${ARGS[@]}" | tee /dev/stderr)
     DEBIAN_EXIT=${PIPESTATUS[0]}
 fi
 
@@ -105,7 +106,17 @@ if [[ -n "$CREATED_ID" ]]; then
 fi
 
 echo ""
-echo "Base container created. Installing Docker components..."
+echo "Base container created. Starting container..."
+
+# Start the container before installing Docker
+if ! pct start "$VAR_PVE_ID"; then
+    echo "ERROR: Failed to start container $VAR_PVE_ID"
+    exit 1
+fi
+echo "Container $VAR_PVE_ID started"
+
+echo ""
+echo "Installing Docker components..."
 echo ""
 
 install_docker() {

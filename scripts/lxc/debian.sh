@@ -268,13 +268,15 @@ if [[ "$OPTICAL_PASSTHROUGH" -eq 1 ]]; then
     success "Optical drive passthrough configured"
 fi
 
-# Step 19: Start the container
-step "Starting container..."
-if pct start "$PVE_ID"; then
-    success "Container $PVE_ID started successfully"
-else
-    warn "Container created but failed to start"
-    exit 1
+# Step 19: Start the container (skip if called from parent script)
+if [[ "${SKIP_START:-0}" -ne 1 ]]; then
+    step "Starting container..."
+    if pct start "$PVE_ID"; then
+        success "Container $PVE_ID started successfully"
+    else
+        warn "Container created but failed to start"
+        exit 1
+    fi
 fi
 
 # Step 20: Display completion message
